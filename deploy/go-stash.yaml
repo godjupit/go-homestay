@@ -1,0 +1,12 @@
+Clusters:
+  - Input:
+      Kafka:
+        Name: gin-looklook
+        Brokers: ["kafka:9092"]
+        Topics: ["looklook-log"]
+        Group: gin-looklook-log
+        Consumers: 4
+    Output:
+      ElasticSearch:
+        Hosts: ["http://elasticsearch:9200"]
+        Index: "gin-looklook-{{yyyy-MM-dd}}"

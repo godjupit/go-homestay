@@ -1,0 +1,5 @@
+.git
+data
+config/.env
+*.log
+server

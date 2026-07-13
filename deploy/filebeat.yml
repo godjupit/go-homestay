@@ -1,0 +1,8 @@
+filebeat.inputs:
+  - type: container
+    paths: ["/var/lib/docker/containers/*/*.log"]
+processors:
+  - add_docker_metadata: ~
+output.kafka:
+  hosts: ["kafka:9092"]
+  topic: looklook-log
