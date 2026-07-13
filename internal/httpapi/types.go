@@ -5,8 +5,12 @@ import "gin-looklook/internal/model"
 type RegisterReq struct {
 	Mobile   string `json:"mobile" binding:"required,len=11"`
 	Password string `json:"password" binding:"required"`
+	Nickname string `json:"nickname" binding:"required,min=1,max=15"`
 }
-type LoginReq = RegisterReq
+type LoginReq struct {
+	Mobile   string `json:"mobile" binding:"required,len=11"`
+	Password string `json:"password" binding:"required"`
+}
 type TokenResp struct {
 	AccessToken  string `json:"accessToken"`
 	AccessExpire int64  `json:"accessExpire"`

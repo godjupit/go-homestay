@@ -3,6 +3,8 @@ package httpapi
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -20,6 +22,24 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+func reqID() string {
+	var b [8]byte
+	rand.Read(b[:])
+	return hex.EncodeToString(b[:])
+}
+
+func RequestID() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.GetHeader("X-Request-ID")
+		if id == "" {
+			id = reqID()
+		}
+		c.Set("requestID", id)
+		c.Header("X-Request-ID", id)
+		c.Next()
+	}
+}
+
 type successResponse struct {
 	Code uint32 `json:"code"`
 	Msg  string `json:"msg"`
@@ -33,11 +53,32 @@ type errorResponse struct {
 func OK(c *gin.Context, data any) {
 	c.JSON(http.StatusOK, successResponse{Code: 200, Msg: "OK", Data: data})
 }
+
+func requestID(c *gin.Context) string {
+	v, _ := c.Get("requestID")
+	id, _ := v.(string)
+	return id
+}
+
 func Fail(c *gin.Context, err error) {
 	code, msg := platform.Public(err)
 	c.Set("auditError", msg)
-	slog.ErrorContext(c.Request.Context(), "request failed", "path", c.Request.URL.Path, "error", err)
-	c.JSON(http.StatusBadRequest, errorResponse{Code: code, Msg: msg})
+
+	// 5xx: 服务端错误（数据库、网络等），4xx: 客户端错误（参数、鉴权等）
+	httpStatus := http.StatusBadRequest
+	if code >= 100005 {
+		httpStatus = http.StatusInternalServerError
+	}
+	slog.ErrorContext(c.Request.Context(), "request failed",
+		"request_id", requestID(c),
+		"path", c.Request.URL.Path,
+		"method", c.Request.Method,
+		"user_id", UserID(c),
+		"http_status", httpStatus,
+		"code", code,
+		"error", err,
+	)
+	c.JSON(httpStatus, errorResponse{Code: code, Msg: msg})
 }
 func Bind(c *gin.Context, target any) bool {
 	if err := c.ShouldBindJSON(target); err != nil {

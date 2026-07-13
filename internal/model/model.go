@@ -32,9 +32,9 @@ const (
 
 type User struct {
 	ID         int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	CreateTime time.Time `gorm:"column:create_time;autoCreateTime" json:"createTime"`
-	UpdateTime time.Time `gorm:"column:update_time;autoUpdateTime" json:"updateTime"`
-	DeleteTime time.Time `gorm:"column:delete_time"                 json:"deleteTime"`
+	CreateTime time.Time  `gorm:"column:create_time;autoCreateTime" json:"createTime"`
+	UpdateTime time.Time  `gorm:"column:update_time;autoUpdateTime" json:"updateTime"`
+	DeleteTime *time.Time `gorm:"column:delete_time;default:CURRENT_TIMESTAMP" json:"deleteTime"`
 	DelState   int64     `gorm:"column:del_state"                   json:"delState"`
 	Version    int64     `gorm:"column:version"                     json:"version"`
 	Mobile     string    `gorm:"column:mobile"                      json:"mobile"`
@@ -100,7 +100,7 @@ type HomestayOrder struct {
 	ID                  int64     `gorm:"column:id;primaryKey;autoIncrement"`
 	CreateTime          time.Time `gorm:"column:create_time;autoCreateTime"`
 	UpdateTime          time.Time `gorm:"column:update_time;autoUpdateTime"`
-	DeleteTime          time.Time `gorm:"column:delete_time"`
+	DeleteTime          *time.Time `gorm:"column:delete_time;default:CURRENT_TIMESTAMP"`
 	DelState            int64     `gorm:"column:del_state"`
 	Version             int64     `gorm:"column:version"`
 	SN                  string    `gorm:"column:sn"`
@@ -135,7 +135,7 @@ type ThirdPayment struct {
 	SN             string     `gorm:"column:sn"`
 	CreateTime     time.Time  `gorm:"column:create_time;autoCreateTime"`
 	UpdateTime     time.Time  `gorm:"column:update_time;autoUpdateTime"`
-	DeleteTime     time.Time  `gorm:"column:delete_time"`
+	DeleteTime     *time.Time `gorm:"column:delete_time;default:CURRENT_TIMESTAMP"`
 	DelState       int64      `gorm:"column:del_state"`
 	Version        int64      `gorm:"column:version"`
 	UserID         int64      `gorm:"column:user_id"`

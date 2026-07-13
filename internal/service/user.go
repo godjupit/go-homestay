@@ -44,8 +44,8 @@ func (s *UserService) Register(ctx context.Context, mobile, password, nickname, 
 	} else if err != gorm.ErrRecordNotFound {
 		return Token{}, platform.E(platform.CodeDB, "数据库繁忙,请稍后再试", err)
 	}
-	if nickname == "" {
-		nickname = platform.Random(8)
+	if nickname != "" {
+		nickname = nickname[:min(len(nickname), 15)]
 	}
 	user := &model.User{Mobile: mobile, Nickname: nickname}
 	if password != "" {

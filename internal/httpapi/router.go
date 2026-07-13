@@ -17,7 +17,7 @@ type Handler struct{ app *app.App }
 
 func NewRouter(a *app.App) *gin.Engine {
 	r := gin.New()
-	r.Use(gin.Recovery(), Metrics(), otelgin.Middleware("gin-looklook"))
+	r.Use(gin.Recovery(), RequestID(), Metrics(), otelgin.Middleware("gin-looklook"))
 	h := &Handler{app: a}
 	r.GET("/healthz", func(c *gin.Context) { OK(c, gin.H{"status": "ok"}) })
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
@@ -73,7 +73,7 @@ func (h *Handler) register(c *gin.Context) {
 	if !Bind(c, &req) {
 		return
 	}
-	v, err := h.app.Users.Register(c, req.Mobile, req.Password, "", model.UserAuthTypeSystem, req.Mobile)
+	v, err := h.app.Users.Register(c, req.Mobile, req.Password, req.Nickname, model.UserAuthTypeSystem, req.Mobile)
 	if err != nil {
 		Fail(c, err)
 		return
