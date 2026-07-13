@@ -166,6 +166,8 @@ type OutboxEvent struct {
 	RetryCount int64  `gorm:"column:retry_count"`
 }
 
+func (OutboxEvent) TableName() string { return "event_outbox" }
+
 type SeckillActivity struct {
 	ID         int64     `gorm:"column:id;primaryKey;autoIncrement"`
 	HomestayID int64     `gorm:"column:homestay_id"`
@@ -263,6 +265,8 @@ type AdminAudit struct {
 	CreatedAt      time.Time `gorm:"column:created_at;autoCreateTime"  json:"createdAt"`
 }
 
+func (AdminAudit) TableName() string { return "admin_audit_log" }
+
 type SearchOutboxEvent struct {
 	ID          int64  `gorm:"column:id;primaryKey;autoIncrement"`
 	EventKey    string `gorm:"column:event_key"`
@@ -270,6 +274,8 @@ type SearchOutboxEvent struct {
 	EventType   string `gorm:"column:event_type"`
 	RetryCount  int64  `gorm:"column:retry_count"`
 }
+
+func (SearchOutboxEvent) TableName() string { return "search_event_outbox" }
 
 type HomestaySearchQuery struct {
 	Keyword    string
