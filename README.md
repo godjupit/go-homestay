@@ -1,4 +1,4 @@
-# Gin LookLook
+# go_homestay
 
 这是原 `go-zero-looklook` 的独立 Gin 单体实现。HTTP 路径、核心业务规则和 MySQL/Redis/Kafka/Asynq/Prometheus/Jaeger/ELK 中间件保持兼容；原项目不会被修改或替换。
 
