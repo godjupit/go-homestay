@@ -77,4 +77,22 @@ func (h *Handler) WXMiniAuth(c *gin.Context) {
 	ok(c, TokenResp{v.AccessToken, v.AccessExpire, v.RefreshAfter})
 }
 
+func (h *Handler) UpdateProfile(c *gin.Context) {
+	var req UpdateProfileReq
+
+	if !bind(c, &req) {
+		return
+	}
+
+	err := h.svc.UpdateProfile(c, userID(c), req.Nickname, req.Sex, req.Avatar, req.Info)
+
+	if err != nil {
+		fail(c, err)
+		return
+	}
+
+	ok(c, gin.H{"msg": "Profile updated successfully"})
+
+}
+
 func userID(c *gin.Context) int64 { v, _ := c.Get("userID"); id, _ := v.(int64); return id }

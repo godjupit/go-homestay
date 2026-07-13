@@ -117,3 +117,23 @@ func (s *Service) WXMiniAuth(ctx context.Context, code, encryptedData, iv string
 	nickname := fmt.Sprintf("LookLook%s", mobile[len(mobile)-4:])
 	return s.Register(ctx, mobile, "", nickname, AuthTypeSmallWX, result.OpenID)
 }
+
+func (s *Service) UpdateProfile(ctx context.Context, userID int64, nickname *string, sex *int64, avatar *string, info *string) error {
+	u, err := s.repo.UserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if nickname != nil {
+		u.Nickname = *nickname
+	}
+	if sex != nil {
+		u.Sex = *sex
+	}
+	if avatar != nil {
+		u.Avatar = *avatar
+	}
+	if info != nil {
+		u.Info = *info
+	}
+	return s.repo.UpdateUser(ctx, u)
+}

@@ -80,3 +80,7 @@ func (r *Repository) CreateUser(ctx context.Context, user *User, auth *UserAuth)
 	}
 	return user.ID, nil
 }
+
+func (r *Repository) UpdateUser(ctx context.Context, user *User) error {
+	return r.DB.WithContext(ctx).Model(user).Updates(user).Error
+}

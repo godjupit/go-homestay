@@ -31,3 +31,10 @@ type UserView struct {
 	Avatar   string `json:"avatar"`
 	Info     string `json:"info"`
 }
+
+type UpdateProfileReq struct {
+	Nickname *string `json:"nickname" binding:"omitempty,min=1,max=15"`
+	Sex      *int64  `json:"sex" binding:"omitempty,oneof=0 1 2"`
+	Avatar   *string `json:"avatar" binding:"omitempty,max=500"`
+	Info     *string `json:"info" binding:"omitempty,max=200"`
+}

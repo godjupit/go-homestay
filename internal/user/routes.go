@@ -10,4 +10,5 @@ func RegisterRoutes(r *gin.RouterGroup, h *Handler, jwtSecret string, jwtMW gin.
 	ua.Use(jwtMW)
 	ua.POST("/user/detail", h.UserDetail)
 	ua.POST("/user/wxMiniAuth", h.WXMiniAuth)
+	ua.POST("/user/profile", h.UpdateProfile)
 }
