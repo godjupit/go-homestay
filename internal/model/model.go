@@ -1,7 +1,6 @@
 package model
 
 import (
-	"database/sql"
 	"time"
 )
 
@@ -32,124 +31,124 @@ const (
 )
 
 type User struct {
-	ID         int64
-	CreateTime time.Time
-	UpdateTime time.Time
-	DeleteTime time.Time
-	DelState   int64
-	Version    int64
-	Mobile     string
-	Password   string `json:"-"`
-	Nickname   string
-	Sex        int64
-	Avatar     string
-	Info       string
+	ID         int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	CreateTime time.Time `gorm:"column:create_time;autoCreateTime" json:"createTime"`
+	UpdateTime time.Time `gorm:"column:update_time;autoUpdateTime" json:"updateTime"`
+	DeleteTime time.Time `gorm:"column:delete_time"                 json:"deleteTime"`
+	DelState   int64     `gorm:"column:del_state"                   json:"delState"`
+	Version    int64     `gorm:"column:version"                     json:"version"`
+	Mobile     string    `gorm:"column:mobile"                      json:"mobile"`
+	Password   string    `gorm:"column:password;<-:create"          json:"-"`
+	Nickname   string    `gorm:"column:nickname"                    json:"nickname"`
+	Sex        int64     `gorm:"column:sex"                         json:"sex"`
+	Avatar     string    `gorm:"column:avatar"                      json:"avatar"`
+	Info       string    `gorm:"column:info"                        json:"info"`
 }
 
 type UserAuth struct {
-	ID       int64
-	UserID   int64
-	AuthKey  string
-	AuthType string
+	ID       int64  `gorm:"column:id;primaryKey;autoIncrement"`
+	UserID   int64  `gorm:"column:user_id"`
+	AuthKey  string `gorm:"column:auth_key"`
+	AuthType string `gorm:"column:auth_type"`
 }
 
 type Homestay struct {
-	ID                  int64   `json:"id"`
-	Version             int64   `json:"version"`
-	Title               string  `json:"title"`
-	SubTitle            string  `json:"subTitle"`
-	Banner              string  `json:"banner"`
-	Info                string  `json:"info"`
-	City                string  `json:"city"`
-	Tags                string  `json:"tags"`
-	Star                float64 `json:"star"`
-	Latitude            float64 `json:"latitude"`
-	Longitude           float64 `json:"longitude"`
-	PeopleNum           int64   `json:"peopleNum"`
-	HomestayBusinessID  int64   `json:"homestayBusinessId"`
-	UserID              int64   `json:"userId"`
-	RowState            int64   `json:"rowState"`
-	RowType             int64   `json:"rowType"`
-	FoodInfo            string  `json:"foodInfo"`
-	FoodPrice           int64   `json:"foodPrice"`
-	HomestayPrice       int64   `json:"homestayPrice"`
-	MarketHomestayPrice int64   `json:"marketHomestayPrice"`
+	ID                  int64   `gorm:"column:id;primaryKey;autoIncrement"       json:"id"`
+	Version             int64   `gorm:"column:version"                           json:"version"`
+	Title               string  `gorm:"column:title"                             json:"title"`
+	SubTitle            string  `gorm:"column:sub_title"                         json:"subTitle"`
+	Banner              string  `gorm:"column:banner"                            json:"banner"`
+	Info                string  `gorm:"column:info"                              json:"info"`
+	City                string  `gorm:"column:city"                              json:"city"`
+	Tags                string  `gorm:"column:tags"                              json:"tags"`
+	Star                float64 `gorm:"column:star"                              json:"star"`
+	Latitude            float64 `gorm:"column:latitude"                          json:"latitude"`
+	Longitude           float64 `gorm:"column:longitude"                         json:"longitude"`
+	PeopleNum           int64   `gorm:"column:people_num"                        json:"peopleNum"`
+	HomestayBusinessID  int64   `gorm:"column:homestay_business_id"              json:"homestayBusinessId"`
+	UserID              int64   `gorm:"column:user_id"                           json:"userId"`
+	RowState            int64   `gorm:"column:row_state"                         json:"rowState"`
+	RowType             int64   `gorm:"column:row_type"                          json:"rowType"`
+	FoodInfo            string  `gorm:"column:food_info"                         json:"foodInfo"`
+	FoodPrice           int64   `gorm:"column:food_price"                        json:"foodPrice"`
+	HomestayPrice       int64   `gorm:"column:homestay_price"                    json:"homestayPrice"`
+	MarketHomestayPrice int64   `gorm:"column:market_homestay_price"             json:"marketHomestayPrice"`
 }
 
 type HomestayBusiness struct {
-	ID        int64   `json:"id"`
-	Title     string  `json:"title"`
-	UserID    int64   `json:"userId"`
-	Info      string  `json:"info"`
-	BossInfo  string  `json:"bossInfo"`
-	RowState  int64   `json:"rowState"`
-	Star      float64 `json:"star"`
-	Tags      string  `json:"tags"`
-	Cover     string  `json:"cover"`
-	HeaderImg string  `json:"headerImg"`
+	ID        int64   `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	Title     string  `gorm:"column:title"                       json:"title"`
+	UserID    int64   `gorm:"column:user_id"                     json:"userId"`
+	Info      string  `gorm:"column:info"                        json:"info"`
+	BossInfo  string  `gorm:"column:boss_info"                   json:"bossInfo"`
+	RowState  int64   `gorm:"column:row_state"                   json:"rowState"`
+	Star      float64 `gorm:"column:star"                        json:"star"`
+	Tags      string  `gorm:"column:tags"                        json:"tags"`
+	Cover     string  `gorm:"column:cover"                       json:"cover"`
+	HeaderImg string  `gorm:"column:header_img"                  json:"headerImg"`
 }
 
 type HomestayComment struct {
-	ID         int64
-	HomestayID int64
-	UserID     int64
-	Content    string
-	Star       []byte
+	ID         int64   `gorm:"column:id;primaryKey;autoIncrement"`
+	HomestayID int64   `gorm:"column:homestay_id"`
+	UserID     int64   `gorm:"column:user_id"`
+	Content    string  `gorm:"column:content"`
+	Star       float64 `gorm:"column:star"`
 }
 
 type HomestayOrder struct {
-	ID                  int64
-	CreateTime          time.Time
-	UpdateTime          time.Time
-	DeleteTime          time.Time
-	DelState            int64
-	Version             int64
-	SN                  string
-	UserID              int64
-	HomestayID          int64
-	Title               string
-	SubTitle            string
-	Cover               string
-	Info                string
-	PeopleNum           int64
-	RowType             int64
-	NeedFood            int64
-	FoodInfo            string
-	FoodPrice           int64
-	HomestayPrice       int64
-	MarketHomestayPrice int64
-	HomestayBusinessID  int64
-	HomestayUserID      int64
-	LiveStartDate       time.Time
-	LiveEndDate         time.Time
-	LivePeopleNum       int64
-	TradeState          int64
-	TradeCode           string
-	Remark              string
-	OrderTotalPrice     int64
-	FoodTotalPrice      int64
-	HomestayTotalPrice  int64
+	ID                  int64     `gorm:"column:id;primaryKey;autoIncrement"`
+	CreateTime          time.Time `gorm:"column:create_time;autoCreateTime"`
+	UpdateTime          time.Time `gorm:"column:update_time;autoUpdateTime"`
+	DeleteTime          time.Time `gorm:"column:delete_time"`
+	DelState            int64     `gorm:"column:del_state"`
+	Version             int64     `gorm:"column:version"`
+	SN                  string    `gorm:"column:sn"`
+	UserID              int64     `gorm:"column:user_id"`
+	HomestayID          int64     `gorm:"column:homestay_id"`
+	Title               string    `gorm:"column:title"`
+	SubTitle            string    `gorm:"column:sub_title"`
+	Cover               string    `gorm:"column:cover"`
+	Info                string    `gorm:"column:info"`
+	PeopleNum           int64     `gorm:"column:people_num"`
+	RowType             int64     `gorm:"column:row_type"`
+	NeedFood            int64     `gorm:"column:need_food"`
+	FoodInfo            string    `gorm:"column:food_info"`
+	FoodPrice           int64     `gorm:"column:food_price"`
+	HomestayPrice       int64     `gorm:"column:homestay_price"`
+	MarketHomestayPrice int64     `gorm:"column:market_homestay_price"`
+	HomestayBusinessID  int64     `gorm:"column:homestay_business_id"`
+	HomestayUserID      int64     `gorm:"column:homestay_user_id"`
+	LiveStartDate       time.Time `gorm:"column:live_start_date"`
+	LiveEndDate         time.Time `gorm:"column:live_end_date"`
+	LivePeopleNum       int64     `gorm:"column:live_people_num"`
+	TradeState          int64     `gorm:"column:trade_state"`
+	TradeCode           string    `gorm:"column:trade_code"`
+	Remark              string    `gorm:"column:remark"`
+	OrderTotalPrice     int64     `gorm:"column:order_total_price"`
+	FoodTotalPrice      int64     `gorm:"column:food_total_price"`
+	HomestayTotalPrice  int64     `gorm:"column:homestay_total_price"`
 }
 
 type ThirdPayment struct {
-	ID             int64
-	SN             string
-	CreateTime     time.Time
-	UpdateTime     time.Time
-	DeleteTime     time.Time
-	DelState       int64
-	Version        int64
-	UserID         int64
-	PayMode        string
-	TradeType      string
-	TradeState     string
-	PayTotal       int64
-	TransactionID  string
-	TradeStateDesc string
-	OrderSN        string
-	ServiceType    string
-	PayStatus      int64
-	PayTime        sql.NullTime
+	ID             int64      `gorm:"column:id;primaryKey;autoIncrement"`
+	SN             string     `gorm:"column:sn"`
+	CreateTime     time.Time  `gorm:"column:create_time;autoCreateTime"`
+	UpdateTime     time.Time  `gorm:"column:update_time;autoUpdateTime"`
+	DeleteTime     time.Time  `gorm:"column:delete_time"`
+	DelState       int64      `gorm:"column:del_state"`
+	Version        int64      `gorm:"column:version"`
+	UserID         int64      `gorm:"column:user_id"`
+	PayMode        string     `gorm:"column:pay_mode"`
+	TradeType      string     `gorm:"column:trade_type"`
+	TradeState     string     `gorm:"column:trade_state"`
+	PayTotal       int64      `gorm:"column:pay_total"`
+	TransactionID  string     `gorm:"column:transaction_id"`
+	TradeStateDesc string     `gorm:"column:trade_state_desc"`
+	OrderSN        string     `gorm:"column:order_sn"`
+	ServiceType    string     `gorm:"column:service_type"`
+	PayStatus      int64      `gorm:"column:pay_status"`
+	PayTime        *time.Time `gorm:"column:pay_time"`
 }
 
 type PaymentStatusEvent struct {
@@ -159,25 +158,25 @@ type PaymentStatusEvent struct {
 }
 
 type OutboxEvent struct {
-	ID         int64
-	EventKey   string
-	Topic      string
-	MessageKey string
-	Payload    []byte
-	RetryCount int64
+	ID         int64  `gorm:"column:id;primaryKey;autoIncrement"`
+	EventKey   string `gorm:"column:event_key"`
+	Topic      string `gorm:"column:topic"`
+	MessageKey string `gorm:"column:message_key"`
+	Payload    []byte `gorm:"column:payload"`
+	RetryCount int64  `gorm:"column:retry_count"`
 }
 
 type SeckillActivity struct {
-	ID         int64
-	HomestayID int64
-	Title      string
-	Price      int64
-	Stock      int64
-	SoldCount  int64
-	StartTime  time.Time
-	EndTime    time.Time
-	Status     int64
-	Remaining  int64
+	ID         int64     `gorm:"column:id;primaryKey;autoIncrement"`
+	HomestayID int64     `gorm:"column:homestay_id"`
+	Title      string    `gorm:"column:title"`
+	Price      int64     `gorm:"column:price"`
+	Stock      int64     `gorm:"column:stock"`
+	SoldCount  int64     `gorm:"column:sold_count"`
+	StartTime  time.Time `gorm:"column:start_time"`
+	EndTime    time.Time `gorm:"column:end_time"`
+	Status     int64     `gorm:"column:status"`
+	Remaining  int64     `gorm:"-"`
 }
 
 type SeckillReservation struct {
@@ -205,39 +204,39 @@ const (
 )
 
 type AdminUser struct {
-	ID           int64
-	Username     string
-	PasswordHash string
-	Nickname     string
-	Status       int64
-	BusinessID   int64
-	LinkedUserID int64
-	Version      int64
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	RoleIDs      []int64
+	ID           int64     `gorm:"column:id;primaryKey;autoIncrement"`
+	Username     string    `gorm:"column:username"`
+	PasswordHash string    `gorm:"column:password_hash;<-:create"`
+	Nickname     string    `gorm:"column:nickname"`
+	Status       int64     `gorm:"column:status"`
+	BusinessID   int64     `gorm:"column:business_id"`
+	LinkedUserID int64     `gorm:"column:linked_user_id"`
+	Version      int64     `gorm:"column:version"`
+	CreatedAt    time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt    time.Time `gorm:"column:updated_at;autoUpdateTime"`
+	RoleIDs      []int64   `gorm:"-"`
 }
 
 type AdminRole struct {
-	ID            int64     `json:"id"`
-	Code          string    `json:"code"`
-	Name          string    `json:"name"`
-	Status        int64     `json:"status"`
-	ScopeType     int64     `json:"scopeType"`
-	Version       int64     `json:"version"`
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
-	PermissionIDs []int64   `json:"permissionIds"`
-	BusinessIDs   []int64   `json:"businessIds"`
+	ID            int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	Code          string    `gorm:"column:code"                        json:"code"`
+	Name          string    `gorm:"column:name"                        json:"name"`
+	Status        int64     `gorm:"column:status"                      json:"status"`
+	ScopeType     int64     `gorm:"column:scope_type"                  json:"scopeType"`
+	Version       int64     `gorm:"column:version"                     json:"version"`
+	CreatedAt     time.Time `gorm:"column:created_at;autoCreateTime"   json:"createdAt"`
+	UpdatedAt     time.Time `gorm:"column:updated_at;autoUpdateTime"   json:"updatedAt"`
+	PermissionIDs []int64   `gorm:"-"                                  json:"permissionIds"`
+	BusinessIDs   []int64   `gorm:"-"                                  json:"businessIds"`
 }
 
 type AdminPermission struct {
-	ID        int64     `json:"id"`
-	Code      string    `json:"code"`
-	Name      string    `json:"name"`
-	Method    string    `json:"method"`
-	Path      string    `json:"path"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID        int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	Code      string    `gorm:"column:code"                        json:"code"`
+	Name      string    `gorm:"column:name"                        json:"name"`
+	Method    string    `gorm:"column:method"                      json:"method"`
+	Path      string    `gorm:"column:path"                        json:"path"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"   json:"createdAt"`
 }
 
 type AdminAuthorization struct {
@@ -248,28 +247,28 @@ type AdminAuthorization struct {
 }
 
 type AdminAudit struct {
-	ID             int64     `json:"id"`
-	AdminUserID    int64     `json:"adminUserId"`
-	Username       string    `json:"username"`
-	PermissionCode string    `json:"permissionCode"`
-	Method         string    `json:"method"`
-	Path           string    `json:"path"`
-	RequestID      string    `json:"requestId"`
-	IP             string    `json:"ip"`
-	HTTPStatus     int       `json:"httpStatus"`
-	Success        bool      `json:"success"`
-	DurationMS     int64     `json:"durationMs"`
-	RequestBody    string    `json:"requestBody"`
-	ErrorMessage   string    `json:"errorMessage"`
-	CreatedAt      time.Time `json:"createdAt"`
+	ID             int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	AdminUserID    int64     `gorm:"column:admin_user_id"              json:"adminUserId"`
+	Username       string    `gorm:"column:username"                   json:"username"`
+	PermissionCode string    `gorm:"column:permission_code"            json:"permissionCode"`
+	Method         string    `gorm:"column:method"                     json:"method"`
+	Path           string    `gorm:"column:path"                       json:"path"`
+	RequestID      string    `gorm:"column:request_id"                 json:"requestId"`
+	IP             string    `gorm:"column:ip"                         json:"ip"`
+	HTTPStatus     int       `gorm:"column:http_status"                json:"httpStatus"`
+	Success        bool      `gorm:"column:success"                    json:"success"`
+	DurationMS     int64     `gorm:"column:duration_ms"                json:"durationMs"`
+	RequestBody    string    `gorm:"column:request_body"               json:"requestBody"`
+	ErrorMessage   string    `gorm:"column:error_message"              json:"errorMessage"`
+	CreatedAt      time.Time `gorm:"column:created_at;autoCreateTime"  json:"createdAt"`
 }
 
 type SearchOutboxEvent struct {
-	ID          int64
-	EventKey    string
-	AggregateID int64
-	EventType   string
-	RetryCount  int64
+	ID          int64  `gorm:"column:id;primaryKey;autoIncrement"`
+	EventKey    string `gorm:"column:event_key"`
+	AggregateID int64  `gorm:"column:aggregate_id"`
+	EventType   string `gorm:"column:event_type"`
+	RetryCount  int64  `gorm:"column:retry_count"`
 }
 
 type HomestaySearchQuery struct {

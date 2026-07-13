@@ -23,6 +23,7 @@ import (
 	"github.com/silenceper/wechat/v2/cache"
 	miniConfig "github.com/silenceper/wechat/v2/miniprogram/config"
 	"github.com/silenceper/wechat/v2/miniprogram/subscribe"
+	"gorm.io/gorm"
 )
 
 const (
@@ -90,7 +91,7 @@ func (r *Runtime) publishSearchOutbox(ctx context.Context) {
 				} else {
 					var homestay *model.Homestay
 					homestay, err = r.repo.HomestayForIndex(ctx, item.AggregateID)
-					if errors.Is(err, repository.ErrNotFound) {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
 						err = r.search.DeleteHomestay(ctx, item.AggregateID)
 					} else if err == nil {
 						err = r.search.IndexHomestay(ctx, homestay)

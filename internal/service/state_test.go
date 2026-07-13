@@ -32,10 +32,10 @@ func TestPayStatus(t *testing.T) {
 }
 
 func TestParseStar(t *testing.T) {
-	if got := ParseStar([]byte("4.8")); got != 4.8 {
+	if got := ParseStar(4.8); got != 4.8 {
 		t.Fatalf("got %v", got)
 	}
-	if got := ParseStar([]byte("bad")); got != 0 {
+	if got := ParseStar(0); got != 0 {
 		t.Fatalf("got %v", got)
 	}
 }

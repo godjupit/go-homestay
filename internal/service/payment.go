@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -20,6 +19,7 @@ import (
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/jsapi"
 	"github.com/wechatpay-apiv3/wechatpay-go/utils"
+	"gorm.io/gorm"
 )
 
 type PrepayResult struct{ AppID, NonceStr, PaySign, Package, Timestamp, SignType string }
@@ -35,7 +35,7 @@ func NewPaymentService(repo *repository.Repository, users *UserService, orders *
 }
 func (s *PaymentService) ByOrder(ctx context.Context, orderSN string) (*model.ThirdPayment, error) {
 	v, err := s.repo.PaymentByOrder(ctx, orderSN)
-	if err == sql.ErrNoRows {
+	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
 	if err != nil {
@@ -68,13 +68,13 @@ func (s *PaymentService) Prepay(ctx context.Context, userID int64, orderSN, serv
 		return PrepayResult{}, err
 	}
 	auth, err := s.users.AuthByUser(ctx, userID, model.UserAuthTypeSmallWX)
-	if err == sql.ErrNoRows {
+	if err == gorm.ErrRecordNotFound {
 		return PrepayResult{}, platform.E(platform.CodeCommon, "Please authorize by WeChat before payment", nil)
 	}
 	if err != nil {
 		return PrepayResult{}, platform.E(platform.CodeDB, "数据库繁忙,请稍后再试", err)
 	}
-	flow := &model.ThirdPayment{SN: platform.GenSN("PMT"), UserID: userID, PayMode: model.PaymentModeWechat, PayTotal: order.OrderTotalPrice, OrderSN: orderSN, ServiceType: serviceType, PayStatus: model.PaymentStatusWait, PayTime: sql.NullTime{}}
+	flow := &model.ThirdPayment{SN: platform.GenSN("PMT"), UserID: userID, PayMode: model.PaymentModeWechat, PayTotal: order.OrderTotalPrice, OrderSN: orderSN, ServiceType: serviceType, PayStatus: model.PaymentStatusWait}
 	if err = s.repo.CreatePayment(ctx, flow); err != nil {
 		return PrepayResult{}, platform.E(platform.CodeDB, "create local third payment record fail", err)
 	}
@@ -141,7 +141,10 @@ func (s *PaymentService) HandleNotify(ctx context.Context, req *http.Request) er
 	if transaction.TradeStateDesc != nil {
 		flow.TradeStateDesc = *transaction.TradeStateDesc
 	}
-	flow.PayTime = sql.NullTime{Time: time.Now(), Valid: status == model.PaymentStatusSuccess}
+	if status == model.PaymentStatusSuccess {
+			now := time.Now()
+			flow.PayTime = &now
+		}
 	event := model.PaymentStatusEvent{PaymentSN: flow.SN, OrderSN: flow.OrderSN, PayStatus: status}
 	body, _ := json.Marshal(event)
 	outbox := model.OutboxEvent{EventKey: flow.SN + ":" + *transaction.TradeState, Topic: s.cfg.PaymentTopic, MessageKey: flow.OrderSN, Payload: body}

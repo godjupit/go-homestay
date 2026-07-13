@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
 	"sync"
 
 	"gin-looklook/internal/model"
 	"gin-looklook/internal/platform"
 	"gin-looklook/internal/repository"
+
+	"gorm.io/gorm"
 )
 
 const (
@@ -26,7 +26,7 @@ func NewTravelService(repo *repository.Repository, users *UserService) *TravelSe
 }
 func (s *TravelService) Homestay(ctx context.Context, id int64) (*model.Homestay, error) {
 	v, err := s.repo.HomestayByID(ctx, id)
-	if err == sql.ErrNoRows {
+	if err == gorm.ErrRecordNotFound {
 		return nil, platform.E(platform.CodeCommon, "This record does not exist", nil)
 	}
 	if err != nil {
@@ -64,7 +64,7 @@ func (s *TravelService) Businesses(ctx context.Context, lastID, pageSize int64) 
 }
 func (s *TravelService) BusinessBoss(ctx context.Context, id int64) (*model.User, error) {
 	b, err := s.repo.BusinessByID(ctx, id)
-	if err == sql.ErrNoRows {
+	if err == gorm.ErrRecordNotFound {
 		return &model.User{}, nil
 	}
 	if err != nil {
@@ -102,20 +102,6 @@ func (s *TravelService) Comments(ctx context.Context, lastID, pageSize int64) ([
 	}
 	return v, nil
 }
-func ParseStar(raw []byte) float64 {
-	var value float64
-	if json.Unmarshal(raw, &value) == nil {
-		return value
-	}
-	var obj map[string]float64
-	if json.Unmarshal(raw, &obj) == nil {
-		var total float64
-		for _, v := range obj {
-			total += v
-		}
-		if len(obj) > 0 {
-			return total / float64(len(obj))
-		}
-	}
-	return 0
+func ParseStar(value float64) float64 {
+	return value
 }

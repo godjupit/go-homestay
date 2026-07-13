@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 const adminAuthCacheTTL = 5 * time.Minute
@@ -53,7 +53,7 @@ func (s *AdminService) Bootstrap(ctx context.Context) error {
 
 func (s *AdminService) Login(ctx context.Context, username, password string) (Token, error) {
 	admin, err := s.repo.AdminByUsername(ctx, strings.TrimSpace(username))
-	if err == sql.ErrNoRows || (err == nil && admin.Status != 1) {
+	if err == gorm.ErrRecordNotFound || (err == nil && admin.Status != 1) {
 		return Token{}, platform.E(platform.CodeCommon, "账号或密码不正确", nil)
 	}
 	if err != nil {
@@ -83,7 +83,7 @@ func (s *AdminService) Authorization(ctx context.Context, adminID int64) (*model
 		}
 	}
 	auth, err := s.repo.AdminAuthorization(ctx, adminID)
-	if err == sql.ErrNoRows {
+	if err == gorm.ErrRecordNotFound {
 		return nil, platform.E(platform.CodeToken, "管理员已停用或不存在", nil)
 	}
 	if err != nil {
@@ -235,7 +235,7 @@ func (s *AdminService) UpdateHomestay(ctx context.Context, adminID int64, v *mod
 	if err != nil {
 		return err
 	}
-	if err = s.repo.UpdateAdminHomestay(ctx, auth, v); err == sql.ErrNoRows {
+	if err = s.repo.UpdateAdminHomestay(ctx, auth, v); err == gorm.ErrRecordNotFound {
 		return platform.E(platform.CodeForbidden, "无权访问该民宿", nil)
 	} else if err != nil {
 		return platform.E(platform.CodeDB, "更新民宿失败", err)

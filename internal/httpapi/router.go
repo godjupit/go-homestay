@@ -296,8 +296,8 @@ func (h *Handler) orderDetail(c *gin.Context) {
 	out := orderView(*v)
 	if payment, e := h.app.Payments.ByOrder(c, v.SN); e == nil && payment != nil {
 		out.PayType = payment.PayMode
-		if payment.PayTime.Valid {
-			out.PayTime = payment.PayTime.Time.Unix()
+		if payment.PayTime != nil {
+			out.PayTime = payment.PayTime.Unix()
 		}
 	}
 	OK(c, out)

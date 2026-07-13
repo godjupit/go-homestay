@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"log/slog"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"gin-looklook/internal/repository"
 
 	"github.com/hibiken/asynq"
+	"gorm.io/gorm"
 )
 
 const (
@@ -103,7 +103,7 @@ func seckillOrderSN(reservationSN, fallback string) string {
 }
 func (s *OrderService) Detail(ctx context.Context, userID int64, sn string) (*model.HomestayOrder, error) {
 	v, err := s.repo.OrderBySN(ctx, sn)
-	if err == sql.ErrNoRows {
+	if err == gorm.ErrRecordNotFound {
 		return nil, platform.E(platform.CodeCommon, "order no exists", nil)
 	}
 	if err != nil {

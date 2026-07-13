@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	"gin-looklook/internal/repository"
 
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 const (
@@ -175,7 +175,7 @@ func (s *SeckillService) Result(ctx context.Context, userID int64, reservationSN
 
 func (s *SeckillService) Process(ctx context.Context, reservation model.SeckillReservation) error {
 	activity, err := s.repo.SeckillActivityByID(ctx, reservation.ActivityID)
-	if err == sql.ErrNoRows {
+	if err == gorm.ErrRecordNotFound {
 		return repository.ErrSeckillSoldOut
 	}
 	if err != nil {

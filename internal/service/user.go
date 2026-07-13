@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 	wechat "github.com/silenceper/wechat/v2"
 	"github.com/silenceper/wechat/v2/cache"
 	miniConfig "github.com/silenceper/wechat/v2/miniprogram/config"
+	"gorm.io/gorm"
 )
 
 type Token struct {
@@ -41,7 +41,7 @@ func (s *UserService) token(userID int64) (Token, error) {
 func (s *UserService) Register(ctx context.Context, mobile, password, nickname, authType, authKey string) (Token, error) {
 	if _, err := s.repo.UserByMobile(ctx, mobile); err == nil {
 		return Token{}, platform.E(platform.CodeCommon, "user has been registered", nil)
-	} else if err != sql.ErrNoRows {
+	} else if err != gorm.ErrRecordNotFound {
 		return Token{}, platform.E(platform.CodeDB, "数据库繁忙,请稍后再试", err)
 	}
 	if nickname == "" {
@@ -65,7 +65,7 @@ func (s *UserService) Register(ctx context.Context, mobile, password, nickname, 
 }
 func (s *UserService) Login(ctx context.Context, mobile, password string) (Token, error) {
 	u, err := s.repo.UserByMobile(ctx, mobile)
-	if err == sql.ErrNoRows {
+	if err == gorm.ErrRecordNotFound {
 		return Token{}, platform.E(platform.CodeCommon, "用户不存在", nil)
 	}
 	if err != nil {
@@ -78,7 +78,7 @@ func (s *UserService) Login(ctx context.Context, mobile, password string) (Token
 }
 func (s *UserService) User(ctx context.Context, id int64) (*model.User, error) {
 	u, err := s.repo.UserByID(ctx, id)
-	if err == sql.ErrNoRows {
+	if err == gorm.ErrRecordNotFound {
 		return nil, platform.E(platform.CodeCommon, "用户不存在", nil)
 	}
 	if err != nil {
@@ -101,7 +101,7 @@ func (s *UserService) WXMiniAuth(ctx context.Context, code, encryptedData, iv st
 	}
 	if auth, err := s.repo.UserAuthByKey(ctx, model.UserAuthTypeSmallWX, result.OpenID); err == nil {
 		return s.token(auth.UserID)
-	} else if err != sql.ErrNoRows {
+	} else if err != gorm.ErrRecordNotFound {
 		return Token{}, platform.E(platform.CodeDB, "数据库繁忙,请稍后再试", err)
 	}
 	data, err := mini.GetEncryptor().Decrypt(result.SessionKey, encryptedData, iv)
