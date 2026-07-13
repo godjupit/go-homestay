@@ -43,3 +43,6 @@ tmp/
 temp/
 api
 worker
+
+# scripts
+scripts/*.sh

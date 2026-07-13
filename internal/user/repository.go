@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -78,6 +79,11 @@ func (r *Repository) CreateUser(ctx context.Context, user *User, auth *UserAuth)
 	if err != nil {
 		return 0, err
 	}
+	slog.InfoContext(
+		ctx,
+		"created user",
+		"userID", user.ID,
+	)
 	return user.ID, nil
 }
 
