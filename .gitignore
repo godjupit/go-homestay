@@ -41,3 +41,5 @@ cmd/*/bin/
 # Temp files
 tmp/
 temp/
+api
+worker
