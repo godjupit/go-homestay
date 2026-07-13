@@ -20,12 +20,25 @@ type Token struct {
 	RefreshAfter int64
 }
 
+// UserRepository defines the data-access contract consumed by Service.
+// *Repository (the GORM+Redis implementation) satisfies it implicitly.
+type UserRepository interface {
+	UserByMobile(ctx context.Context, mobile string) (*User, error)
+	UserByID(ctx context.Context, id int64) (*User, error)
+	UserAuthByUser(ctx context.Context, userID int64, authType string) (*UserAuth, error)
+	UserAuthByKey(ctx context.Context, authType, authKey string) (*UserAuth, error)
+	CreateUser(ctx context.Context, user *User, auth *UserAuth) (int64, error)
+	UpdateUser(ctx context.Context, user *User) error
+}
+
 type Service struct {
-	repo *Repository
+	repo UserRepository
 	cfg  shared.Config
 }
 
-func NewService(repo *Repository, cfg shared.Config) *Service {
+// NewService creates a Service backed by the given repository.
+// Pass a *Repository (the production implementation) or any mock satisfying UserRepository.
+func NewService(repo UserRepository, cfg shared.Config) *Service {
 	return &Service{repo: repo, cfg: cfg}
 }
 
