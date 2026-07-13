@@ -48,3 +48,4 @@ Gin Router / JWT / Recovery / Metrics / OpenTelemetry
 保留原项目 17 个业务接口：用户 4 个、旅行 8 个、订单 3 个、支付 2 个；新增秒杀 3 个接口、公开民宿搜索 1 个接口和 RBAC 管理后台 14 个接口，另提供 `/healthz` 和 `/metrics`。请求与响应仍使用统一 JSON 结构。
 
 秒杀的 Lua、Redis Stream、双层防超卖和补偿设计见 [秒杀机制设计与实现](docs/秒杀机制设计与实现.md)；RBAC、四种数据范围、审计、地理搜索和搜索 Outbox 见 [RBAC 与 Elasticsearch 搜索设计与实现](docs/RBAC与Elasticsearch搜索设计与实现.md)。
+# go-homestay
