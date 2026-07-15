@@ -12,6 +12,7 @@
 * Asynq 后台任务
 * Elasticsearch 搜索
 * 秒杀库存控制
+* Eino AI 智能客服与民宿推荐
 * Prometheus 指标监控
 * OpenTelemetry 链路追踪
 * Docker Compose 一键部署
@@ -31,6 +32,7 @@
 * 权限控制
 * 民宿搜索
 * 秒杀活动
+* AI 民宿推荐与订单查询客服
 
 项目目标不是简单实现业务接口，而是实践企业后端开发中常见的工程能力：
 
@@ -61,6 +63,7 @@ make benchmark-seckill # 隔离活动上的秒杀并发与库存一致性验证
 * [RBAC 与 Elasticsearch](docs/RBAC与Elasticsearch搜索设计与实现.md)
 * [技术亮点与面试讲解](docs/技术亮点与面试讲解.md)
 * [秒杀压测方法与报告](docs/秒杀压测报告.md)
+* [AI Agent 设计与实现](docs/AI-Agent设计与实现.md)
 
 ---
 
@@ -77,6 +80,7 @@ make benchmark-seckill # 隔离活动上的秒杀并发与库存一致性验证
 | Redis         | 缓存、分布式锁、秒杀库存       |
 | Kafka         | 消息队列               |
 | Asynq         | 异步任务系统             |
+| CloudWeGo Eino | AI Agent 与工具调用      |
 | Elasticsearch | 全文搜索               |
 | Prometheus    | 指标采集               |
 | Grafana       | 数据可视化              |
@@ -156,6 +160,7 @@ Docker Compose 提供：
 │   ├── shared                     # 配置、数据库、可观测性等共享能力
 │   │
 │   ├── user                       # 用户领域
+│   ├── assistant                  # Eino AI 智能客服
 │   ├── travel                     # 民宿领域
 │   ├── order                      # 订单领域
 │   ├── payment                    # 支付领域
@@ -417,9 +422,13 @@ Database / Redis
 | `config/.env.local` | Go 程序在宿主机运行时使用，中间件地址指向 `localhost` 的映射端口 |
 | `config/.env.docker` | `docker compose --env-file` 使用的变量文件 |
 
+如果根目录存在被 Git 忽略的 `.env`，`make dev` 和 `make docker` 会在上述基础配置之后加载它，适合保存本机的 AI 密钥等私有配置。
+
 修改密码或 JWT 密钥时，应保证 API、Worker 和对应中间件使用相同的值。生产环境必须替换示例密码、`JWT_SECRET` 和 `ADMIN_JWT_SECRET`，不要将真实密钥提交到仓库。
 
 当 `APP_ENV=production` 时，API 和 Worker 会在启动阶段拒绝短 JWT 密钥、相同的用户/管理员密钥以及默认管理员密码。开发环境允许示例值，便于本地一键启动。
+
+AI 助手是可选能力。配置 `AI_API_KEY` 后启用，`AI_BASE_URL` 可指定 OpenAI 兼容接口，`AI_MODEL` 选择模型，`AI_TIMEOUT_SECONDS` 控制一次 Agent 请求的最长时间。项目也兼容常用的 `OPENAI_API_KEY`、`OPENAI_BASE_URL` 和 `OPENAI_MODEL` 变量名；同一项同时存在时优先使用 `AI_*`。未配置密钥时 API 仍可启动，助手接口返回 `503`。
 
 常用地址：
 
@@ -554,6 +563,19 @@ GET /healthz
   }
 }
 ```
+
+## AI 智能客服
+
+先登录并取得 Token。客服可以根据城市、人数、预算和偏好推荐真实民宿：
+
+```bash
+curl -X POST http://localhost:8080/agent/v1/chat \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"question":"推荐杭州适合 4 人入住、每晚 500 元以内的亲子民宿"}'
+```
+
+同一个接口也可以询问“我最近的订单是什么状态？”。客服将民宿推荐、公开民宿详情和本人订单查询集成在一起，但不执行取消、支付、退款等写操作。推荐候选来自 Elasticsearch 真实房源索引，指定日期库存和最终价格仍需在下单时确认。
 
 ---
 

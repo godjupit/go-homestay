@@ -77,6 +77,42 @@ func LoginRateLimit() gin.HandlerFunc {
 	}
 }
 
+// AgentRateLimit limits model spending per authenticated user. It is an
+// in-process guard; a distributed deployment should add a Redis/gateway limit.
+func AgentRateLimit() gin.HandlerFunc {
+	var mu sync.Mutex
+	visitors := make(map[int64]*loginVisitor)
+	lastCleanup := time.Now()
+	return func(c *gin.Context) {
+		value, _ := c.Get("userID")
+		userID, _ := value.(int64)
+		now := time.Now()
+		mu.Lock()
+		if now.Sub(lastCleanup) > time.Minute {
+			for key, visitor := range visitors {
+				if now.Sub(visitor.lastSeen) > 10*time.Minute {
+					delete(visitors, key)
+				}
+			}
+			lastCleanup = now
+		}
+		visitor := visitors[userID]
+		if visitor == nil {
+			visitor = &loginVisitor{limiter: rate.NewLimiter(rate.Every(20*time.Second), 3)}
+			visitors[userID] = visitor
+		}
+		visitor.lastSeen = now
+		allowed := visitor.limiter.Allow()
+		mu.Unlock()
+		if !allowed {
+			c.Header("Retry-After", "20")
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, errorResponse{Code: shared.CodeCommon, Msg: "AI 请求过于频繁,请稍后再试"})
+			return
+		}
+		c.Next()
+	}
+}
+
 type errorResponse struct {
 	Code uint32 `json:"code"`
 	Msg  string `json:"msg"`

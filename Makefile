@@ -1,8 +1,13 @@
 .PHONY: dev worker docker down logs fmt fmt-check vet test build compose-check migration-check verify demo benchmark-seckill clean
 
+COMPOSE_ENV_FILES := --env-file config/.env.docker
+ifneq ($(wildcard .env),)
+COMPOSE_ENV_FILES += --env-file .env
+endif
+
 dev:
 	@echo "Starting Go local development..."
-	set -a && . config/.env.local && set +a && go run ./cmd/api
+	set -a; . config/.env.local; [ ! -f .env ] || . ./.env; set +a; go run ./cmd/api
 
 worker:
 	@echo "Starting worker..."
@@ -10,7 +15,7 @@ worker:
 
 docker:
 	@echo "Starting docker environment..."
-	docker compose --env-file config/.env.docker up -d --build
+	docker compose $(COMPOSE_ENV_FILES) up -d --build
 
 down:
 	docker compose down
@@ -35,7 +40,7 @@ build:
 	go build ./cmd/api ./cmd/worker
 
 compose-check:
-	docker compose --env-file config/.env.docker config --quiet
+	docker compose $(COMPOSE_ENV_FILES) config --quiet
 
 migration-check:
 	./scripts/validate-migrations.sh

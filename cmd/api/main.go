@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"gin-looklook/internal/admin"
+	"gin-looklook/internal/assistant"
 	"gin-looklook/internal/bootstrap"
 	"gin-looklook/internal/httpserver"
 	"gin-looklook/internal/order"
@@ -40,6 +41,11 @@ func main() {
 		slog.Error("init application", "error", err)
 		os.Exit(1)
 	}
+	agentSvc, err := assistant.NewService(ctx, cfg, app.OrderSvc, app.TravelSvc, app.SearchSvc)
+	if err != nil {
+		slog.Error("init AI assistant", "error", err)
+		os.Exit(1)
+	}
 	handlers := httpserver.Handlers{
 		User:    user.NewHandler(app.UserSvc),
 		Travel:  travel.NewHandler(app.TravelSvc, app.UserSvc),
@@ -48,6 +54,7 @@ func main() {
 		Seckill: seckill.NewHandler(app.SeckillSvc),
 		Search:  search.NewHandler(app.SearchSvc),
 		Admin:   admin.NewHandler(app.AdminSvc),
+		Agent:   assistant.NewHandler(agentSvc),
 	}
 	router := httpserver.NewRouter(handlers, cfg, app.AdminSvc)
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: router, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}

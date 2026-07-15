@@ -25,6 +25,13 @@ services:
       WX_MCH_PRIVATE_KEY: ${WX_MCH_PRIVATE_KEY:-}
       WX_API_V3_KEY: ${WX_API_V3_KEY:-}
       WX_NOTIFY_URL: ${WX_NOTIFY_URL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_MODEL: ${AI_MODEL:-}
+      AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-20}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
     ports: ["8080:8080"]
     depends_on:
       mysql: {condition: service_healthy}

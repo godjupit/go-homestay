@@ -37,6 +37,10 @@ type Config struct {
 	AdminJWTExpire   time.Duration
 	AdminInitialUser string
 	AdminInitialPass string
+	AgentAPIKey      string
+	AgentBaseURL     string
+	AgentModel       string
+	AgentTimeout     time.Duration
 }
 
 func LoadConfig() Config {
@@ -75,12 +79,19 @@ func LoadConfig() Config {
 		AdminJWTExpire:   time.Duration(envInt("ADMIN_JWT_EXPIRE_SECONDS", 28800)) * time.Second,
 		AdminInitialUser: env("ADMIN_INITIAL_USER", "admin"),
 		AdminInitialPass: env("ADMIN_INITIAL_PASSWORD", "Admin@123"),
+		AgentAPIKey:      env("AI_API_KEY", os.Getenv("OPENAI_API_KEY")),
+		AgentBaseURL:     env("AI_BASE_URL", os.Getenv("OPENAI_BASE_URL")),
+		AgentModel:       env("AI_MODEL", env("OPENAI_MODEL", "gpt-4.1-mini")),
+		AgentTimeout:     time.Duration(envInt("AI_TIMEOUT_SECONDS", 20)) * time.Second,
 	}
 }
 
 func (c Config) Validate() error {
 	if c.JWTExpire <= 0 || c.AdminJWTExpire <= 0 {
 		return errors.New("JWT expiration must be positive")
+	}
+	if c.AgentTimeout <= 0 {
+		return errors.New("AI timeout must be positive")
 	}
 	if c.Environment != "production" {
 		return nil

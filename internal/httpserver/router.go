@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"gin-looklook/internal/admin"
+	"gin-looklook/internal/assistant"
 	"gin-looklook/internal/order"
 	"gin-looklook/internal/payment"
 	"gin-looklook/internal/search"
@@ -23,6 +24,7 @@ type Handlers struct {
 	Seckill *seckill.Handler
 	Search  *search.Handler
 	Admin   *admin.Handler
+	Agent   *assistant.Handler
 }
 
 func NewRouter(h Handlers, cfg shared.Config, adminSvc *admin.Service) *gin.Engine {
@@ -41,6 +43,7 @@ func NewRouter(h Handlers, cfg shared.Config, adminSvc *admin.Service) *gin.Engi
 	payment.RegisterRoutes(&r.RouterGroup, h.Payment, jwtMW)
 	seckill.RegisterRoutes(&r.RouterGroup, h.Seckill)
 	seckill.RegisterOrderRoutes(&r.RouterGroup, h.Seckill, jwtMW)
+	assistant.RegisterRoutes(&r.RouterGroup, h.Agent, jwtMW, AgentRateLimit())
 
 	// Admin routes
 	admin.RegisterRoutes(&r.RouterGroup, h.Admin)
