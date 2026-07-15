@@ -46,3 +46,4 @@ worker
 
 # scripts
 scripts/*.sh
+CLAUDE.md
