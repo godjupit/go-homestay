@@ -122,39 +122,26 @@ Docker Compose 提供：
 ```
 .
 ├── cmd
-│   └── server
-│       └── main.go              # 服务启动入口
+│   ├── api
+│   │   └── main.go              # HTTP API 启动入口
+│   └── worker
+│       └── main.go              # 异步 Worker 启动入口
 │
 ├── internal
-│   ├── app
-│   │   └── app.go               # 应用初始化
+│   ├── bootstrap                  # 应用初始化
 │   │
-│   ├── config
-│   │   └── config.go            # 配置管理
+│   ├── httpserver                 # Gin 路由与中间件
 │   │
-│   ├── httpapi
-│   │   ├── router.go            # Gin路由
-│   │   ├── middleware.go        # 中间件
-│   │   └── admin.go             # 管理后台接口
+│   ├── shared                     # 配置、数据库、可观测性等共享能力
 │   │
-│   ├── service                  # 业务层
-│   │   ├── user.go
-│   │   ├── travel.go
-│   │   ├── order.go
-│   │   ├── payment.go
-│   │   ├── seckill.go
-│   │   └── search.go
-│   │
-│   ├── repository               # 数据访问层
-│   │   ├── user
-│   │   ├── order
-│   │   └── search
-│   │
-│   ├── model                    # 数据模型
-│   │
-│   ├── worker                   # 异步任务
-│   │
-│   └── platform                 # 基础能力
+│   ├── user                       # 用户领域
+│   ├── travel                     # 民宿领域
+│   ├── order                      # 订单领域
+│   ├── payment                    # 支付领域
+│   ├── seckill                    # 秒杀领域
+│   ├── search                     # 搜索领域
+│   ├── admin                      # 管理后台与 RBAC
+│   └── worker                     # 异步任务
 │
 ├── migrations                   # 数据库迁移
 │
@@ -368,7 +355,7 @@ Prometheus采集：
 访问：
 
 ```
-http://localhost:4000/metrics
+http://localhost:8080/metrics
 ```
 
 ## Trace
@@ -399,6 +386,37 @@ Database / Redis
 
 ---
 
+# 配置说明
+
+项目通过环境变量读取配置，**Go 程序不会自动加载 `.env` 文件**。请根据运行方式选择配置：
+
+| 文件 | 用途 |
+| --- | --- |
+| `config/.env.example` | 完整的配置项模板，用于查看或创建自定义配置 |
+| `config/.env.local` | Go 程序在宿主机运行时使用，中间件地址指向 `localhost` 的映射端口 |
+| `config/.env.docker` | `docker compose --env-file` 使用的变量文件 |
+
+修改密码或 JWT 密钥时，应保证 API、Worker 和对应中间件使用相同的值。生产环境必须替换示例密码、`JWT_SECRET` 和 `ADMIN_JWT_SECRET`，不要将真实密钥提交到仓库。
+
+常用地址：
+
+| 服务 | 宿主机地址 |
+| --- | --- |
+| API | `http://localhost:8080` |
+| Nginx 网关 | `http://localhost:8888` |
+| Metrics | `http://localhost:8080/metrics` |
+| MySQL | `localhost:33069` |
+| Redis | `localhost:36379` |
+| Kafka | `localhost:9094` |
+| Elasticsearch | `http://localhost:9200` |
+| Kibana | `http://localhost:5601` |
+| Jaeger | `http://localhost:16686` |
+| Prometheus | `http://localhost:9091` |
+| Grafana | `http://localhost:3001` |
+| Asynq Monitor | `http://localhost:8980` |
+
+---
+
 # 本地启动
 
 ## 方式一：Docker 全家桶
@@ -406,16 +424,23 @@ Database / Redis
 启动：
 
 ```bash
-cp config/.env.example config/.env
+make docker
+```
 
-docker compose up -d --build
+等价命令：
+
+```bash
+docker compose --env-file config/.env.docker up -d --build
 ```
 
 检查：
 
 ```bash
 curl http://localhost:8080/healthz
+docker compose ps
 ```
+
+> 不要依赖 `cp config/.env.example config/.env`：Docker Compose 默认只会自动读取项目根目录下的 `.env`，不会自动读取 `config/.env`。
 
 ---
 
@@ -424,13 +449,28 @@ curl http://localhost:8080/healthz
 启动基础设施：
 
 ```bash
-docker compose up -d mysql redis kafka elasticsearch
+docker compose --env-file config/.env.docker up -d mysql redis kafka elasticsearch jaeger
 ```
 
-运行：
+运行 API（`make dev` 会先加载 `config/.env.local`）：
 
 ```bash
-go run ./cmd/server
+make dev
+```
+
+如需处理 Kafka 消息和 Asynq 任务，在另一个终端启动 Worker：
+
+```bash
+make worker
+```
+
+不使用 Makefile 时，需要手动导出环境变量：
+
+```bash
+set -a
+. config/.env.local
+set +a
+go run ./cmd/api
 ```
 
 测试：
@@ -541,7 +581,7 @@ Handler
 如果你刚开始学习 Go 后端，可以按照：
 
 ```
-1. cmd/server/main.go
+1. cmd/api/main.go
         |
         v
 2. router.go
