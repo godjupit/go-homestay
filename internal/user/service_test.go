@@ -11,8 +11,9 @@ import (
 // ---- mock repository ----
 
 type mockRepo struct {
-	userByIDFn  func(ctx context.Context, id int64) (*User, error)
-	updateUserFn func(ctx context.Context, user *User) error
+	userByIDFn         func(ctx context.Context, id int64) (*User, error)
+	updateUserFn       func(ctx context.Context, user *User) error
+	updatePasswordHash func(ctx context.Context, userID int64, passwordHash string) error
 
 	// Unused methods — panic if called so the test fails fast.
 	userByMobileFn   func(ctx context.Context, mobile string) (*User, error)
@@ -50,6 +51,12 @@ func (m *mockRepo) CreateUser(ctx context.Context, user *User, auth *UserAuth) (
 }
 func (m *mockRepo) UpdateUser(ctx context.Context, user *User) error {
 	return m.updateUserFn(ctx, user)
+}
+func (m *mockRepo) UpdatePasswordHash(ctx context.Context, userID int64, passwordHash string) error {
+	if m.updatePasswordHash != nil {
+		return m.updatePasswordHash(ctx, userID, passwordHash)
+	}
+	panic("UpdatePasswordHash not implemented in mock")
 }
 
 // ---- helpers ----
@@ -100,9 +107,9 @@ func TestUpdateProfile_AllFields(t *testing.T) {
 
 func TestUpdateProfile_SingleField(t *testing.T) {
 	tests := []struct {
-		name     string
-		setup    func(u *User)
-		check    func(t *testing.T, u *User)
+		name  string
+		setup func(u *User)
+		check func(t *testing.T, u *User)
 	}{
 		{
 			name: "nickname only",

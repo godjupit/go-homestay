@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"gin-looklook/internal/admin"
@@ -19,6 +20,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/time/rate"
 )
 
 type successResponse struct {
@@ -26,6 +28,55 @@ type successResponse struct {
 	Msg  string `json:"msg"`
 	Data any    `json:"data"`
 }
+
+type loginVisitor struct {
+	limiter  *rate.Limiter
+	lastSeen time.Time
+}
+
+func LoginRateLimit() gin.HandlerFunc {
+	var mu sync.Mutex
+	visitors := make(map[string]*loginVisitor)
+	lastCleanup := time.Now()
+	return func(c *gin.Context) {
+		now := time.Now()
+		key := c.ClientIP()
+		if c.Request.Body != nil {
+			body, _ := io.ReadAll(io.LimitReader(c.Request.Body, 1<<20))
+			c.Request.Body = io.NopCloser(bytes.NewReader(body))
+			var credentials struct {
+				Mobile string `json:"mobile"`
+			}
+			if json.Unmarshal(body, &credentials) == nil && credentials.Mobile != "" {
+				key += "|" + credentials.Mobile
+			}
+		}
+		mu.Lock()
+		if now.Sub(lastCleanup) > time.Minute {
+			for key, visitor := range visitors {
+				if now.Sub(visitor.lastSeen) > 10*time.Minute {
+					delete(visitors, key)
+				}
+			}
+			lastCleanup = now
+		}
+		visitor := visitors[key]
+		if visitor == nil {
+			visitor = &loginVisitor{limiter: rate.NewLimiter(rate.Every(12*time.Second), 5)}
+			visitors[key] = visitor
+		}
+		visitor.lastSeen = now
+		allowed := visitor.limiter.Allow()
+		mu.Unlock()
+		if !allowed {
+			c.Header("Retry-After", "12")
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, errorResponse{Code: shared.CodeCommon, Msg: "登录请求过于频繁,请稍后再试"})
+			return
+		}
+		c.Next()
+	}
+}
+
 type errorResponse struct {
 	Code uint32 `json:"code"`
 	Msg  string `json:"msg"`
@@ -95,7 +146,7 @@ func JWT(secret string) gin.HandlerFunc {
 			raw = raw[7:]
 		}
 		token, err := jwt.Parse(raw, func(t *jwt.Token) (any, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			if t.Method != jwt.SigningMethodHS256 {
 				return nil, jwt.ErrSignatureInvalid
 			}
 			return []byte(secret), nil
@@ -125,7 +176,7 @@ func AdminJWT(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		raw := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
 		token, err := jwt.Parse(raw, func(t *jwt.Token) (any, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			if t.Method != jwt.SigningMethodHS256 {
 				return nil, jwt.ErrSignatureInvalid
 			}
 			return []byte(secret), nil

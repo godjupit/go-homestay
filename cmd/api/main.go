@@ -26,6 +26,10 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	cfg := shared.LoadConfig()
+	if err := cfg.Validate(); err != nil {
+		slog.Error("invalid configuration", "error", err)
+		os.Exit(1)
+	}
 	shutdownTrace, err := shared.InitTelemetry(cfg.JaegerEndpoint)
 	if err != nil {
 		slog.Error("init telemetry", "error", err)

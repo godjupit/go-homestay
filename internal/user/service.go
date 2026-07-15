@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"gin-looklook/internal/shared"
@@ -11,6 +12,7 @@ import (
 	wechat "github.com/silenceper/wechat/v2"
 	"github.com/silenceper/wechat/v2/cache"
 	miniConfig "github.com/silenceper/wechat/v2/miniprogram/config"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -19,6 +21,8 @@ type Token struct {
 	AccessExpire int64
 	RefreshAfter int64
 }
+
+const dummyPasswordHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
 
 // UserRepository defines the data-access contract consumed by Service.
 // *Repository (the GORM+Redis implementation) satisfies it implicitly.
@@ -29,6 +33,7 @@ type UserRepository interface {
 	UserAuthByKey(ctx context.Context, authType, authKey string) (*UserAuth, error)
 	CreateUser(ctx context.Context, user *User, auth *UserAuth) (int64, error)
 	UpdateUser(ctx context.Context, user *User) error
+	UpdatePasswordHash(ctx context.Context, userID int64, passwordHash string) error
 }
 
 type Service struct {
@@ -61,7 +66,11 @@ func (s *Service) Register(ctx context.Context, mobile, password, nickname, auth
 	}
 	user := &User{Mobile: mobile, Nickname: nickname}
 	if password != "" {
-		user.Password = shared.MD5(password)
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return Token{}, shared.E(shared.CodeCommon, "注册失败,请稍后再试", err)
+		}
+		user.Password = string(hash)
 	}
 	if authType == "" {
 		authType = AuthTypeSystem
@@ -79,15 +88,34 @@ func (s *Service) Register(ctx context.Context, mobile, password, nickname, auth
 func (s *Service) Login(ctx context.Context, mobile, password string) (Token, error) {
 	u, err := s.repo.UserByMobile(ctx, mobile)
 	if err == gorm.ErrRecordNotFound {
-		return Token{}, shared.E(shared.CodeCommon, "用户不存在", nil)
+		// Keep the public response indistinguishable from a wrong password.
+		_ = bcrypt.CompareHashAndPassword([]byte(dummyPasswordHash), []byte(password))
+		return Token{}, shared.E(shared.CodeCommon, "账号或密码不正确", nil)
 	}
 	if err != nil {
 		return Token{}, shared.E(shared.CodeDB, "数据库繁忙,请稍后再试", err)
 	}
-	if shared.MD5(password) != u.Password {
+	valid, legacy := verifyPassword(u.Password, password)
+	if !valid {
 		return Token{}, shared.E(shared.CodeCommon, "账号或密码不正确", nil)
 	}
+	if legacy {
+		hash, hashErr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if hashErr != nil {
+			return Token{}, shared.E(shared.CodeCommon, "登录失败,请稍后再试", hashErr)
+		}
+		if err = s.repo.UpdatePasswordHash(ctx, u.ID, string(hash)); err != nil {
+			return Token{}, shared.E(shared.CodeDB, "数据库繁忙,请稍后再试", err)
+		}
+	}
 	return s.token(u.ID)
+}
+
+func verifyPassword(encoded, password string) (valid, legacy bool) {
+	if strings.HasPrefix(encoded, "$2a$") || strings.HasPrefix(encoded, "$2b$") || strings.HasPrefix(encoded, "$2y$") {
+		return bcrypt.CompareHashAndPassword([]byte(encoded), []byte(password)) == nil, false
+	}
+	return shared.MD5(password) == encoded, true
 }
 
 func (s *Service) User(ctx context.Context, id int64) (*User, error) {

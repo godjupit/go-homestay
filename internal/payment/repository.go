@@ -18,6 +18,22 @@ func (r *Repository) CreatePayment(ctx context.Context, v *ThirdPayment) error {
 	return r.DB.WithContext(ctx).Create(v).Error
 }
 
+// FirstOrCreatePayment relies on uk_order_service to make concurrent retries
+// converge on one third-party payment number.
+func (r *Repository) FirstOrCreatePayment(ctx context.Context, candidate *ThirdPayment) (*ThirdPayment, error) {
+	if err := r.CreatePayment(ctx, candidate); err == nil {
+		return candidate, nil
+	}
+	var existing ThirdPayment
+	err := r.DB.WithContext(ctx).
+		Where("order_sn = ? AND service_type = ? AND del_state = 0", candidate.OrderSN, candidate.ServiceType).
+		First(&existing).Error
+	if err != nil {
+		return nil, err
+	}
+	return &existing, nil
+}
+
 func (r *Repository) PaymentBySN(ctx context.Context, sn string) (*ThirdPayment, error) {
 	var v ThirdPayment
 	err := r.DB.WithContext(ctx).Where("sn = ? AND del_state = 0", sn).First(&v).Error

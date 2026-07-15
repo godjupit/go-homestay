@@ -49,6 +49,9 @@ func (m *handlerMockRepo) UpdateUser(ctx context.Context, user *User) error {
 	m.user.Info = user.Info
 	return nil
 }
+func (m *handlerMockRepo) UpdatePasswordHash(context.Context, int64, string) error {
+	panic("not implemented")
+}
 
 // ---- setup ----
 

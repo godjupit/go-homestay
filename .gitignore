@@ -46,6 +46,12 @@ worker
 
 # scripts
 scripts/*.sh
+!scripts/demo.sh
+!scripts/validate-migrations.sh
+!scripts/benchmark-seckill.sh
 CLAUDE.md
 
-/home/godjupit/gin-looklook/docs
+gin-looklook/docs
+
+# Local interview practice notes and reference answers
+/interview-practice/

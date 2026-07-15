@@ -37,4 +37,3 @@ func CloseDB(db *gorm.DB) {
 		_ = sqlDB.Close()
 	}
 }
-

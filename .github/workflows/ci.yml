@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Formatting
+        run: make fmt-check
+      - name: Static analysis
+        run: make vet
+      - name: Unit tests with race detector
+        run: make test
+      - name: Build API and worker
+        run: make build
+      - name: Validate Docker Compose
+        run: make compose-check
+      - name: Apply migrations to an empty MySQL instance
+        run: make migration-check

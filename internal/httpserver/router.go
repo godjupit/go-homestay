@@ -34,7 +34,7 @@ func NewRouter(h Handlers, cfg shared.Config, adminSvc *admin.Service) *gin.Engi
 	jwtMW := JWT(cfg.JWTSecret)
 	adminJwtMW := AdminJWT(cfg.AdminJWTSecret)
 
-	user.RegisterRoutes(&r.RouterGroup, h.User, cfg.JWTSecret, jwtMW)
+	user.RegisterRoutes(&r.RouterGroup, h.User, cfg.JWTSecret, LoginRateLimit(), jwtMW)
 	travel.RegisterRoutes(&r.RouterGroup, h.Travel)
 	search.RegisterRoutes(&r.RouterGroup, h.Search)
 	order.RegisterRoutes(&r.RouterGroup, h.Order, jwtMW)

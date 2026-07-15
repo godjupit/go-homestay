@@ -4,6 +4,7 @@ services:
     restart: unless-stopped
     environment:
       TZ: Asia/Shanghai
+      APP_ENV: ${APP_ENV:-development}
       GIN_MODE: release
       MYSQL_HOST: mysql:3306
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-PXDN93VRKUm8TeE7}
@@ -34,9 +35,10 @@ services:
   worker:
     build: .
     restart: unless-stopped
-    command: ["worker"]
+    entrypoint: ["worker"]
     environment:
       TZ: Asia/Shanghai
+      APP_ENV: ${APP_ENV:-development}
       GIN_MODE: release
       MYSQL_HOST: mysql:3306
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-PXDN93VRKUm8TeE7}

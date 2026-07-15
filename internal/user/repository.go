@@ -90,3 +90,10 @@ func (r *Repository) CreateUser(ctx context.Context, user *User, auth *UserAuth)
 func (r *Repository) UpdateUser(ctx context.Context, user *User) error {
 	return r.DB.WithContext(ctx).Model(user).Updates(user).Error
 }
+
+func (r *Repository) UpdatePasswordHash(ctx context.Context, userID int64, passwordHash string) error {
+	// Password is create-only in the general User model. This narrowly scoped
+	// statement is the only update path used by the legacy MD5 migration.
+	return r.DB.WithContext(ctx).
+		Exec("UPDATE `user` SET password = ? WHERE id = ? AND del_state = 0", passwordHash, userID).Error
+}

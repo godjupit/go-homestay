@@ -66,6 +66,9 @@ func (s *Service) Prepay(ctx context.Context, userID int64, orderSN, serviceType
 	if err != nil {
 		return PrepayResult{}, err
 	}
+	if err = validatePayableOrder(ord); err != nil {
+		return PrepayResult{}, err
+	}
 	auth, err := s.users.AuthByUser(ctx, userID, user.AuthTypeSmallWX)
 	if err == gorm.ErrRecordNotFound {
 		return PrepayResult{}, shared.E(shared.CodeCommon, "Please authorize by WeChat before payment", nil)
@@ -73,13 +76,20 @@ func (s *Service) Prepay(ctx context.Context, userID int64, orderSN, serviceType
 	if err != nil {
 		return PrepayResult{}, shared.E(shared.CodeDB, "数据库繁忙,请稍后再试", err)
 	}
-	flow := &ThirdPayment{SN: shared.GenSN("PMT"), UserID: userID, PayMode: ModeWechat, PayTotal: ord.OrderTotalPrice, OrderSN: orderSN, ServiceType: serviceType, PayStatus: StatusWait}
-	if err = s.repo.CreatePayment(ctx, flow); err != nil {
-		return PrepayResult{}, shared.E(shared.CodeDB, "create local third payment record fail", err)
-	}
 	client, err := s.wxClient(ctx)
 	if err != nil {
 		return PrepayResult{}, err
+	}
+	flow := &ThirdPayment{SN: shared.GenSN("PMT"), UserID: userID, PayMode: ModeWechat, PayTotal: ord.OrderTotalPrice, OrderSN: orderSN, ServiceType: serviceType, PayStatus: StatusWait}
+	flow, err = s.repo.FirstOrCreatePayment(ctx, flow)
+	if err != nil {
+		return PrepayResult{}, shared.E(shared.CodeDB, "create local third payment record fail", err)
+	}
+	if flow.UserID != userID || flow.PayTotal != ord.OrderTotalPrice {
+		return PrepayResult{}, shared.E(shared.CodeCommon, "payment record does not match order", nil)
+	}
+	if flow.PayStatus != StatusWait {
+		return PrepayResult{}, shared.E(shared.CodeCommon, "order has already been paid", nil)
 	}
 	svc := jsapi.JsapiApiService{Client: client}
 	resp, _, err := svc.PrepayWithRequestPayment(ctx, jsapi.PrepayRequest{Appid: core.String(s.cfg.WxAppID), Mchid: core.String(s.cfg.WxMchID), Description: core.String("homestay pay"), OutTradeNo: core.String(flow.SN), Attach: core.String("homestay pay"), NotifyUrl: core.String(s.cfg.WxNotifyURL), Amount: &jsapi.Amount{Total: core.Int64(flow.PayTotal)}, Payer: &jsapi.Payer{Openid: core.String(auth.AuthKey)}})
@@ -96,10 +106,17 @@ func payStatus(state string) int64 {
 	case "USERPAYING":
 		return StatusWait
 	case "REFUND":
-		return StatusWait
+		return StatusRefund
 	default:
 		return StatusFail
 	}
+}
+
+func validatePayableOrder(ord *order.HomestayOrder) error {
+	if ord == nil || ord.TradeState != order.TradeStateWaitPay || ord.OrderTotalPrice <= 0 {
+		return shared.E(shared.CodeCommon, "order is not payable", nil)
+	}
+	return nil
 }
 
 func (s *Service) HandleNotify(ctx context.Context, req *http.Request) error {

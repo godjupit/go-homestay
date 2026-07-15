@@ -43,7 +43,8 @@ CREATE TABLE `third_payment` (
   `pay_status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '平台内交易状态   -1:支付失败 0:未支付 1:支付成功 2:已退款',
   `pay_time` datetime NOT NULL DEFAULT '1970-01-01 08:00:00' COMMENT '支付成功时间',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_sn` (`sn`)
+  UNIQUE KEY `idx_sn` (`sn`),
+  UNIQUE KEY `uk_order_service` (`order_sn`,`service_type`)
 ) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='第三方支付流水记录';
 
 SET FOREIGN_KEY_CHECKS = 1;

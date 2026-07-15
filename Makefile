@@ -1,4 +1,4 @@
-.PHONY: dev docker down logs test clean
+.PHONY: dev worker docker down logs fmt fmt-check vet test build compose-check migration-check verify demo benchmark-seckill clean
 
 dev:
 	@echo "Starting Go local development..."
@@ -20,6 +20,33 @@ logs:
 
 test:
 	go test -race ./...
+
+fmt:
+	gofmt -w $$(find cmd internal -name '*.go' -type f)
+
+fmt-check:
+	@test -z "$$(gofmt -l $$(find cmd internal -name '*.go' -type f))" || \
+		{ echo 'Go files need formatting. Run: make fmt'; gofmt -l $$(find cmd internal -name '*.go' -type f); exit 1; }
+
+vet:
+	go vet ./...
+
+build:
+	go build ./cmd/api ./cmd/worker
+
+compose-check:
+	docker compose --env-file config/.env.docker config --quiet
+
+migration-check:
+	./scripts/validate-migrations.sh
+
+verify: fmt-check vet test build compose-check
+
+demo:
+	./scripts/demo.sh
+
+benchmark-seckill:
+	./scripts/benchmark-seckill.sh
 
 clean:
 	docker system prune -f

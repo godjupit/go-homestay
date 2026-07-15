@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -8,6 +9,7 @@ import (
 )
 
 type Config struct {
+	Environment      string
 	HTTPAddr         string
 	MetricsAddr      string
 	UserDSN          string
@@ -45,6 +47,7 @@ func LoadConfig() Config {
 		return fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=true&loc=Asia%%2FShanghai", mysqlUser, mysqlPass, mysqlHost, db)
 	}
 	return Config{
+		Environment:      env("APP_ENV", "development"),
 		HTTPAddr:         env("HTTP_ADDR", ":8080"),
 		MetricsAddr:      env("METRICS_ADDR", ":4000"),
 		UserDSN:          env("USER_DSN", dsn("looklook_usercenter")),
@@ -73,6 +76,25 @@ func LoadConfig() Config {
 		AdminInitialUser: env("ADMIN_INITIAL_USER", "admin"),
 		AdminInitialPass: env("ADMIN_INITIAL_PASSWORD", "Admin@123"),
 	}
+}
+
+func (c Config) Validate() error {
+	if c.JWTExpire <= 0 || c.AdminJWTExpire <= 0 {
+		return errors.New("JWT expiration must be positive")
+	}
+	if c.Environment != "production" {
+		return nil
+	}
+	if len(c.JWTSecret) < 32 || c.JWTSecret == "replace-this-in-production" || c.JWTSecret == "change-me-in-production" {
+		return errors.New("JWT_SECRET must be a non-placeholder value of at least 32 characters in production")
+	}
+	if len(c.AdminJWTSecret) < 32 || c.AdminJWTSecret == c.JWTSecret || c.AdminJWTSecret == "replace-admin-secret-in-production" || c.AdminJWTSecret == "change-admin-secret-in-production" {
+		return errors.New("ADMIN_JWT_SECRET must be a distinct non-placeholder value of at least 32 characters in production")
+	}
+	if c.AdminInitialPass == "Admin@123" || len(c.AdminInitialPass) < 12 {
+		return errors.New("ADMIN_INITIAL_PASSWORD must be changed and contain at least 12 characters in production")
+	}
+	return nil
 }
 
 func env(key, fallback string) string {

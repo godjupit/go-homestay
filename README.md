@@ -1,6 +1,6 @@
-# Gin Homestay
+# Gin LookLook Homestay
 
-一个基于 Go + Gin 构建的高性能民宿预订系统后端。
+一个基于 Go + Gin 构建、强调业务一致性和工程实践的民宿预订系统后端。
 
 项目最初来源于 `go-zero-looklook`，后经过独立 Gin 架构重构，保留原有业务模型，同时引入现代互联网后端常见技术方案：
 
@@ -18,7 +18,7 @@
 
 ## 项目定位
 
-`gin-homestay` 是一个模拟真实在线民宿平台的后端服务。
+`gin-looklook` 是一个模拟真实在线民宿平台的模块化单体后端服务。
 
 核心业务包括：
 
@@ -40,6 +40,27 @@
 * 如何设计异步任务
 * 如何接入监控体系
 * 如何进行服务治理
+
+## 当前工程质量
+
+仓库提供统一质量门禁、真实业务演示和空库迁移校验：
+
+```bash
+make verify           # 格式、静态检查、竞态测试、构建、Compose 配置
+make migration-check  # 在临时 MySQL 中顺序执行全部迁移
+make demo             # 注册、登录、读取民宿、下单、取消的完整链路
+make benchmark-seckill # 隔离活动上的秒杀并发与库存一致性验证
+```
+
+`main` 分支应始终保持这些检查通过；带有故意失败测试和 TODO 的教学内容放在独立练习分支，不合并到主分支。
+
+详细设计文档：
+
+* [架构与业务实现](docs/架构与业务实现.md)
+* [秒杀机制设计与实现](docs/秒杀机制设计与实现.md)
+* [RBAC 与 Elasticsearch](docs/RBAC与Elasticsearch搜索设计与实现.md)
+* [技术亮点与面试讲解](docs/技术亮点与面试讲解.md)
+* [秒杀压测方法与报告](docs/秒杀压测报告.md)
 
 ---
 
@@ -398,6 +419,8 @@ Database / Redis
 
 修改密码或 JWT 密钥时，应保证 API、Worker 和对应中间件使用相同的值。生产环境必须替换示例密码、`JWT_SECRET` 和 `ADMIN_JWT_SECRET`，不要将真实密钥提交到仓库。
 
+当 `APP_ENV=production` 时，API 和 Worker 会在启动阶段拒绝短 JWT 密钥、相同的用户/管理员密钥以及默认管理员密码。开发环境允许示例值，便于本地一键启动。
+
 常用地址：
 
 | 服务 | 宿主机地址 |
@@ -440,6 +463,18 @@ curl http://localhost:8080/healthz
 docker compose ps
 ```
 
+执行完整业务演示：
+
+```bash
+make demo
+```
+
+如果服务已经启动，可避免重复构建：
+
+```bash
+DEMO_STACK_READY=1 make demo
+```
+
 > 不要依赖 `cp config/.env.example config/.env`：Docker Compose 默认只会自动读取项目根目录下的 `.env`，不会自动读取 `config/.env`。
 
 ---
@@ -476,8 +511,10 @@ go run ./cmd/api
 测试：
 
 ```bash
-go test -race ./...
+make verify
 ```
+
+测试分为三层：包内单元测试验证状态与安全边界，`make demo` 验证真实 HTTP 主链路，`make migration-check` 验证空数据库初始化。GitHub Actions 会在每个 Pull Request 上执行同一套质量门禁。
 
 ---
 
@@ -510,7 +547,11 @@ GET /healthz
 
 ```json
 {
- "status":"ok"
+  "code": 200,
+  "msg": "OK",
+  "data": {
+    "status": "ok"
+  }
 }
 ```
 
@@ -558,9 +599,9 @@ Handler
 
 ## 架构
 
-* 引入 Wire 依赖注入
-* Repository 接入 GORM
-* 服务拆分微服务
+* 在模块数量继续增长时评估 Wire 依赖注入
+* 明确模块边界，优先保持模块化单体
+* 根据真实容量和团队规模决定是否拆分服务
 
 ## 性能
 
@@ -570,9 +611,9 @@ Handler
 
 ## 工程化
 
-* CI/CD
-* Kubernetes部署
-* 自动化测试
+* 增加关键 Handler、Worker 和支付回调的集成测试
+* 将演示环境扩展为可选的预发布环境
+* 根据实际部署需求评估 Kubernetes，而不是为技术栈而引入
 
 ---
 
