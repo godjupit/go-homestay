@@ -3,7 +3,6 @@ package admin
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"gin-looklook/internal/travel"
@@ -321,27 +320,9 @@ func (r *Repository) AdminAudits(ctx context.Context, adminID int64, permission 
 // ── Admin Homestay ──
 
 func scopeCondition(auth *Authorization) (string, []any) {
-	if auth != nil && auth.AllData {
-		return "", nil
-	}
-	parts := make([]string, 0, 2)
-	args := make([]any, 0)
-	if auth != nil && len(auth.BusinessIDs) > 0 {
-		placeholders := make([]string, 0, len(auth.BusinessIDs))
-		for _, id := range auth.BusinessIDs {
-			placeholders = append(placeholders, "?")
-			args = append(args, id)
-		}
-		parts = append(parts, "homestay_business_id IN ("+strings.Join(placeholders, ",")+")")
-	}
-	if auth != nil && auth.LinkedUserID > 0 {
-		parts = append(parts, "user_id = ?")
-		args = append(args, auth.LinkedUserID)
-	}
-	if len(parts) == 0 {
-		return " AND 1=0", nil
-	}
-	return " AND (" + strings.Join(parts, " OR ") + ")", args
+	// TODO(practice-08): 实现全部/商家/自定义/本人数据范围。
+	// 没有任何数据权限时必须 deny by default，不能返回全量数据。
+	return " AND 1=0", nil
 }
 
 func (r *Repository) AdminHomestays(ctx context.Context, auth *Authorization, page, pageSize int64) ([]travel.Homestay, int64, error) {

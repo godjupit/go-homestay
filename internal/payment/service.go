@@ -66,6 +66,9 @@ func (s *Service) Prepay(ctx context.Context, userID int64, orderSN, serviceType
 	if err != nil {
 		return PrepayResult{}, err
 	}
+	if err = validatePayableOrder(ord); err != nil {
+		return PrepayResult{}, err
+	}
 	auth, err := s.users.AuthByUser(ctx, userID, user.AuthTypeSmallWX)
 	if err == gorm.ErrRecordNotFound {
 		return PrepayResult{}, shared.E(shared.CodeCommon, "Please authorize by WeChat before payment", nil)
@@ -90,16 +93,13 @@ func (s *Service) Prepay(ctx context.Context, userID int64, orderSN, serviceType
 }
 
 func payStatus(state string) int64 {
-	switch state {
-	case "SUCCESS":
-		return StatusSuccess
-	case "USERPAYING":
-		return StatusWait
-	case "REFUND":
-		return StatusWait
-	default:
-		return StatusFail
-	}
+	// TODO(practice-04): 将支付渠道状态映射为内部支付状态。
+	return StatusFail
+}
+
+func validatePayableOrder(ord *order.HomestayOrder) error {
+	// TODO(practice-04): 只有待支付且金额大于 0 的订单可以发起支付。
+	return shared.E(shared.CodeCommon, "TODO(practice-04): validate payable order", nil)
 }
 
 func (s *Service) HandleNotify(ctx context.Context, req *http.Request) error {

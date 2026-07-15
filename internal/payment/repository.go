@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"errors"
+	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -94,6 +95,28 @@ func (r *Repository) PendingOutbox(ctx context.Context, limit int) ([]OutboxEven
 		Limit(limit).
 		Find(&out).Error
 	return out, err
+}
+
+func (r *Repository) OutboxStats(ctx context.Context) (int, time.Duration, error) {
+	var stats struct {
+		Pending int        `gorm:"column:pending"`
+		Oldest  *time.Time `gorm:"column:oldest"`
+	}
+	if err := r.DB.WithContext(ctx).
+		Table("event_outbox").
+		Select("COUNT(*) AS pending, MIN(created_at) AS oldest").
+		Where("status = 0").
+		Scan(&stats).Error; err != nil {
+		return 0, 0, err
+	}
+	if stats.Oldest == nil {
+		return stats.Pending, 0, nil
+	}
+	age := time.Since(*stats.Oldest)
+	if age < 0 {
+		age = 0
+	}
+	return stats.Pending, age, nil
 }
 
 func (r *Repository) MarkOutboxPublished(ctx context.Context, id int64) error {

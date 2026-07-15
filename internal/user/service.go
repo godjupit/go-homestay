@@ -3,11 +3,9 @@ package user
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"gin-looklook/internal/shared"
 
-	"github.com/golang-jwt/jwt/v4"
 	wechat "github.com/silenceper/wechat/v2"
 	"github.com/silenceper/wechat/v2/cache"
 	miniConfig "github.com/silenceper/wechat/v2/miniprogram/config"
@@ -43,11 +41,9 @@ func NewService(repo UserRepository, cfg shared.Config) *Service {
 }
 
 func (s *Service) token(userID int64) (Token, error) {
-	now := time.Now()
-	claims := jwt.MapClaims{"exp": now.Add(s.cfg.JWTExpire).Unix(), "iat": now.Unix(), "jwtUserId": userID}
-	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err := t.SignedString([]byte(s.cfg.JWTSecret))
-	return Token{AccessToken: signed, AccessExpire: now.Add(s.cfg.JWTExpire).Unix(), RefreshAfter: now.Add(s.cfg.JWTExpire / 2).Unix()}, err
+	// TODO(practice-01): 使用 HS256 和 JWTSecret 签发包含 jwtUserId/iat/exp 的 token，
+	// 并正确计算 AccessExpire 与 RefreshAfter。
+	return Token{}, shared.E(shared.CodeCommon, "TODO(practice-01): implement JWT issuing", nil)
 }
 
 func (s *Service) Register(ctx context.Context, mobile, password, nickname, authType, authKey string) (Token, error) {
@@ -77,17 +73,9 @@ func (s *Service) Register(ctx context.Context, mobile, password, nickname, auth
 }
 
 func (s *Service) Login(ctx context.Context, mobile, password string) (Token, error) {
-	u, err := s.repo.UserByMobile(ctx, mobile)
-	if err == gorm.ErrRecordNotFound {
-		return Token{}, shared.E(shared.CodeCommon, "用户不存在", nil)
-	}
-	if err != nil {
-		return Token{}, shared.E(shared.CodeDB, "数据库繁忙,请稍后再试", err)
-	}
-	if shared.MD5(password) != u.Password {
-		return Token{}, shared.E(shared.CodeCommon, "账号或密码不正确", nil)
-	}
-	return s.token(u.ID)
+	// TODO(practice-01): 完成登录链路：查询用户、区分不存在与 DB 错误、
+	// 验证密码，并为成功用户签发 JWT。对外不要泄露“账号存在但密码错误”。
+	return Token{}, shared.E(shared.CodeCommon, "TODO(practice-01): implement user login", nil)
 }
 
 func (s *Service) User(ctx context.Context, id int64) (*User, error) {

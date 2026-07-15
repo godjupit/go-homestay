@@ -34,6 +34,8 @@ services:
   worker:
     build: .
     restart: unless-stopped
+    # TODO(practice-05): Dockerfile 的 ENTRYPOINT 会与 command 拼成 `api worker`。
+    # 请让该服务真正以 worker 二进制为入口，并用 `docker compose top worker` 验证。
     command: ["worker"]
     environment:
       TZ: Asia/Shanghai

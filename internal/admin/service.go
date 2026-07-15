@@ -201,7 +201,10 @@ func (s *Service) ConfigureRole(ctx context.Context, v *AdminRole) error {
 	return nil
 }
 
-func validScope(scope int64) bool { return scope >= DataScopeAll && scope <= DataScopeSelf }
+func validScope(scope int64) bool {
+	// TODO(practice-08): 只允许已定义的数据范围枚举。
+	return false
+}
 
 func (s *Service) Permissions(ctx context.Context) ([]AdminPermission, error) {
 	return s.repo.AdminPermissions(ctx)

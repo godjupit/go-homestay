@@ -40,12 +40,13 @@ type StatusEvent struct {
 }
 
 type OutboxEvent struct {
-	ID         int64  `gorm:"column:id;primaryKey;autoIncrement"`
-	EventKey   string `gorm:"column:event_key"`
-	Topic      string `gorm:"column:topic"`
-	MessageKey string `gorm:"column:message_key"`
-	Payload    []byte `gorm:"column:payload"`
-	RetryCount int64  `gorm:"column:retry_count"`
+	ID         int64     `gorm:"column:id;primaryKey;autoIncrement"`
+	EventKey   string    `gorm:"column:event_key"`
+	Topic      string    `gorm:"column:topic"`
+	MessageKey string    `gorm:"column:message_key"`
+	Payload    []byte    `gorm:"column:payload"`
+	RetryCount int64     `gorm:"column:retry_count"`
+	CreatedAt  time.Time `gorm:"column:created_at"`
 }
 
 func (OutboxEvent) TableName() string { return "event_outbox" }

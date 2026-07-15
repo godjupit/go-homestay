@@ -112,14 +112,8 @@ func toDocument(v *travel.Homestay) homestayDocument {
 }
 
 func splitTags(tags string) []string {
-	parts := strings.FieldsFunc(tags, func(r rune) bool { return r == ',' || r == '，' })
-	out := make([]string, 0, len(parts))
-	for _, part := range parts {
-		if value := strings.TrimSpace(part); value != "" {
-			out = append(out, value)
-		}
-	}
-	return out
+	// TODO(practice-07): 同时支持中英文逗号，去除空白并忽略空标签。
+	return nil
 }
 
 func (s *Service) IndexHomestay(ctx context.Context, v *travel.Homestay) error {
@@ -209,29 +203,8 @@ func (s *Service) Search(ctx context.Context, q Query) (*SearchResult, error) {
 }
 
 func searchSort(sortBy []string, validGeo bool, lat, lon float64) []any {
-	sorts := make([]any, 0)
-	for _, field := range sortBy {
-		switch field {
-		case "distance", "distance_asc":
-			if validGeo {
-				sorts = append(sorts, map[string]any{"_geo_distance": map[string]any{"location": map[string]any{"lat": lat, "lon": lon}, "order": "asc", "unit": "km", "mode": "min", "distance_type": "arc", "ignore_unmapped": true}})
-			}
-		case "price_asc":
-			sorts = append(sorts, map[string]any{"homestayPrice": "asc"})
-		case "price_desc":
-			sorts = append(sorts, map[string]any{"homestayPrice": "desc"})
-		case "star_desc":
-			sorts = append(sorts, map[string]any{"star": "desc"})
-		case "newest":
-			sorts = append(sorts, map[string]any{"id": "desc"})
-		}
-	}
-	if len(sorts) == 0 {
-		sorts = append(sorts, map[string]any{"star": "desc"}, map[string]any{"id": "desc"})
-	} else {
-		sorts = append(sorts, map[string]any{"id": "desc"})
-	}
-	return sorts
+	// TODO(practice-07): 把白名单排序转换成 ES DSL，地理排序需要合法坐标，并保留 id 稳定次序。
+	return nil
 }
 
 func (s *Service) doJSON(ctx context.Context, method, path string, input, output any) error {

@@ -184,6 +184,12 @@ func (r *Runtime) publishOutbox(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
+			pending, oldestAge, statsErr := r.paymentRepo.OutboxStats(ctx)
+			if statsErr != nil {
+				slog.Error("query outbox metrics", "error", statsErr)
+			} else {
+				shared.SetPaymentOutboxState(pending, oldestAge)
+			}
 			items, err := r.paymentRepo.PendingOutbox(ctx, 100)
 			if err != nil {
 				slog.Error("query outbox", "error", err)
@@ -252,13 +258,8 @@ func (r *Runtime) consumePayments(ctx context.Context) {
 		}
 		var event payment.StatusEvent
 		if err = json.Unmarshal(msg.Value, &event); err == nil {
-			var state int64 = -99
-			if event.PayStatus == payment.StatusSuccess {
-				state = order.TradeStateWaitUse
-			} else if event.PayStatus == payment.StatusRefund {
-				state = order.TradeStateRefund
-			}
-			if state != -99 {
+			state, shouldUpdate := orderStateForPayment(event.PayStatus)
+			if shouldUpdate {
 				_, err = r.orders.UpdateState(ctx, event.OrderSN, state, 0)
 			}
 		}
@@ -270,4 +271,9 @@ func (r *Runtime) consumePayments(ctx context.Context) {
 			slog.Error("commit payment event", "error", err)
 		}
 	}
+}
+
+func orderStateForPayment(payStatus int64) (int64, bool) {
+	// TODO(practice-05): 支付成功转待使用，退款转已退款，其他状态忽略。
+	return 0, false
 }

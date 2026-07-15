@@ -21,57 +21,29 @@ const (
 )
 
 var reserveScript = redis.NewScript(`
-local now = tonumber(redis.call('TIME')[1])
-local startAt = tonumber(redis.call('HGET', KEYS[1], 'startAt'))
-local endAt = tonumber(redis.call('HGET', KEYS[1], 'endAt'))
-local status = tonumber(redis.call('HGET', KEYS[1], 'status'))
-if not startAt or not endAt or status ~= 1 then return {-4, ''} end
-if now < startAt then return {-1, ''} end
-if now > endAt then return {-2, ''} end
-local previous = redis.call('HGET', KEYS[3], ARGV[1])
-if previous then return {1, previous} end
-local stock = tonumber(redis.call('GET', KEYS[2]) or '0')
-if stock <= 0 then return {-3, ''} end
-redis.call('DECR', KEYS[2])
-redis.call('HSET', KEYS[3], ARGV[1], ARGV[2])
-redis.call('HSET', KEYS[4],
-  'status', 'pending', 'userId', ARGV[1], 'activityId', ARGV[3],
-  'liveStartTime', ARGV[4], 'liveEndTime', ARGV[5],
-  'livePeopleNum', ARGV[6], 'remark', ARGV[7], 'attempts', '0')
-redis.call('EXPIREAT', KEYS[3], endAt + 604800)
-redis.call('EXPIREAT', KEYS[4], endAt + 604800)
-redis.call('XADD', KEYS[5], 'MAXLEN', '~', 100000, '*',
-  'reservationSn', ARGV[2], 'userId', ARGV[1], 'activityId', ARGV[3],
-  'liveStartTime', ARGV[4], 'liveEndTime', ARGV[5],
-  'livePeopleNum', ARGV[6], 'remark', ARGV[7])
-return {0, ARGV[2]}
+-- TODO(practice-06): 实现活动时间校验、一人一单、预扣库存、结果初始化和 Stream 投递。
+return {-4, ''}
 `)
 
 var compensateScript = redis.NewScript(`
-if redis.call('HGET', KEYS[1], 'status') == 'pending' then
-  redis.call('INCR', KEYS[2])
-  redis.call('HDEL', KEYS[3], ARGV[1])
-  redis.call('HSET', KEYS[1], 'status', 'failed', 'error', ARGV[2])
-  return 1
-end
+-- TODO(practice-06): 只能对 pending 预约补偿一次，并恢复库存/用户占用。
 return 0
 `)
 
 var completeScript = redis.NewScript(`
-if ARGV[1] == '1' and redis.call('HGET', KEYS[1], 'stockRestored') ~= '1' then
-  redis.call('INCR', KEYS[2])
-  redis.call('HSET', KEYS[1], 'stockRestored', '1')
-end
-redis.call('HSET', KEYS[1], 'status', 'success', 'orderSn', ARGV[2], 'error', '')
-return 1
+-- TODO(practice-06): 幂等标记创单成功，必要时只恢复一次 Redis 库存。
+return 0
 `)
 
-func activityKey(id int64) string              { return fmt.Sprintf("%s:activity:%d", prefix, id) }
-func stockKey(id int64) string                 { return fmt.Sprintf("%s:stock:%d", prefix, id) }
-func usersKey(id int64) string                 { return fmt.Sprintf("%s:users:%d", prefix, id) }
-func resultKey(sn string) string               { return fmt.Sprintf("%s:result:%s", prefix, sn) }
-func sequenceKey() string                      { return prefix + ":sequence" }
-func makeReservationSN(unix, seq int64) string { return fmt.Sprintf("SKR%014d%08x", unix, uint32(seq)) }
+func activityKey(id int64) string { return fmt.Sprintf("%s:activity:%d", prefix, id) }
+func stockKey(id int64) string    { return fmt.Sprintf("%s:stock:%d", prefix, id) }
+func usersKey(id int64) string    { return fmt.Sprintf("%s:users:%d", prefix, id) }
+func resultKey(sn string) string  { return fmt.Sprintf("%s:result:%s", prefix, sn) }
+func sequenceKey() string         { return prefix + ":sequence" }
+func makeReservationSN(unix, seq int64) string {
+	// TODO(practice-06): 生成长度固定、以 SKR 开头的可唯一预约号。
+	return ""
+}
 
 type Service struct {
 	repo   *order.Repository

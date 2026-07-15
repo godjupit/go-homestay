@@ -25,14 +25,15 @@ func NewService(repo *Repository, trvl *travel.Service, client *asynq.Client) *S
 }
 
 func (s *Service) Create(ctx context.Context, userID, homestayID int64, isFood bool, startUnix, endUnix, people int64, remark string) (*HomestayOrder, error) {
-	if endUnix <= startUnix {
-		return nil, shared.E(shared.CodeCommon, "Stay at least one night", nil)
+	nights, err := stayNights(startUnix, endUnix)
+	if err != nil {
+		return nil, err
 	}
 	h, err := s.travel.Homestay(ctx, homestayID)
 	if err != nil {
 		return nil, err
 	}
-	v := buildOrder(*h, userID, h.HomestayPrice, isFood, startUnix, endUnix, people, remark)
+	v := buildOrder(*h, userID, h.HomestayPrice, isFood, startUnix, endUnix, nights, people, remark)
 	if err := s.repo.CreateOrder(ctx, v); err != nil {
 		return nil, shared.E(shared.CodeDB, "Order Database Exception", err)
 	}
@@ -40,20 +41,14 @@ func (s *Service) Create(ctx context.Context, userID, homestayID int64, isFood b
 	return v, nil
 }
 
-func buildOrder(h travel.Homestay, userID, nightlyPrice int64, isFood bool, startUnix, endUnix, people int64, remark string) *HomestayOrder {
-	start, end := time.Unix(startUnix, 0), time.Unix(endUnix, 0)
-	days := int64(end.Sub(start).Hours() / 24)
-	cover := ""
-	if h.Banner != "" {
-		cover = strings.Split(h.Banner, ",")[0]
-	}
-	v := &HomestayOrder{SN: shared.GenSN("HSO"), UserID: userID, HomestayID: h.ID, Title: h.Title, SubTitle: h.SubTitle, Cover: cover, Info: h.Info, PeopleNum: h.PeopleNum, RowType: h.RowType, FoodInfo: h.FoodInfo, FoodPrice: h.FoodPrice, HomestayPrice: nightlyPrice, MarketHomestayPrice: h.MarketHomestayPrice, HomestayBusinessID: h.HomestayBusinessID, HomestayUserID: h.UserID, LiveStartDate: start, LiveEndDate: end, LivePeopleNum: people, TradeState: TradeStateWaitPay, TradeCode: shared.Random(8), Remark: remark, HomestayTotalPrice: nightlyPrice * days}
-	if isFood {
-		v.NeedFood = NeedFoodYes
-		v.FoodTotalPrice = h.FoodPrice * people * days
-	}
-	v.OrderTotalPrice = v.HomestayTotalPrice + v.FoodTotalPrice
-	return v
+func stayNights(startUnix, endUnix int64) (int64, error) {
+	// TODO(practice-02): 校验至少住一晚，并返回可用于计费的晚数。
+	return 0, shared.E(shared.CodeParam, "TODO(practice-02): implement stay validation", nil)
+}
+
+func buildOrder(h travel.Homestay, userID, nightlyPrice int64, isFood bool, startUnix, endUnix, nights, people int64, remark string) *HomestayOrder {
+	// TODO(practice-02): 生成订单快照、订单号/核销码，并以“分”计算住宿、餐食和总价。
+	return &HomestayOrder{}
 }
 
 func (s *Service) scheduleClose(ctx context.Context, orderSN string) {
@@ -64,14 +59,15 @@ func (s *Service) scheduleClose(ctx context.Context, orderSN string) {
 }
 
 func (s *Service) CreateSeckill(ctx context.Context, reservationSN string, activityID, userID int64, activity SeckillActivity, liveStart, liveEnd, people int64, remark string) (orderSN string, restoreStock bool, err error) {
-	if liveEnd <= liveStart || time.Unix(liveEnd, 0).Sub(time.Unix(liveStart, 0)) < 24*time.Hour {
-		return "", false, shared.E(shared.CodeParam, "秒杀入住时间至少一晚", nil)
+	nights, err := stayNights(liveStart, liveEnd)
+	if err != nil {
+		return "", false, err
 	}
 	h, err := s.travel.Homestay(ctx, activity.HomestayID)
 	if err != nil {
 		return "", false, err
 	}
-	v := buildOrder(*h, userID, activity.Price, false, liveStart, liveEnd, people, remark)
+	v := buildOrder(*h, userID, activity.Price, false, liveStart, liveEnd, nights, people, remark)
 	v.SN = seckillOrderSN(reservationSN, v.SN)
 	orderSN, existed, restoreStock, err := s.repo.CreateSeckillOrder(ctx, reservationSN, activityID, userID, v)
 	if err != nil {
@@ -113,14 +109,8 @@ func (s *Service) List(ctx context.Context, userID, lastID, pageSize, state int6
 }
 
 func verifyState(oldState, newState int64) bool {
-	switch newState {
-	case TradeStateCancel, TradeStateWaitUse:
-		return oldState == TradeStateWaitPay
-	case TradeStateUsed, TradeStateRefund, TradeStateExpire:
-		return oldState == TradeStateWaitUse
-	default:
-		return false
-	}
+	// TODO(practice-03): 实现订单状态机，只允许题目文档中定义的迁移。
+	return false
 }
 
 func (s *Service) UpdateState(ctx context.Context, sn string, newState int64, userID int64) (*HomestayOrder, error) {
@@ -133,12 +123,16 @@ func (s *Service) UpdateState(ctx context.Context, sn string, newState int64, us
 	if v.TradeState == newState {
 		return v, nil
 	}
+	oldState := v.TradeState
 	if !verifyState(v.TradeState, newState) {
+		shared.ObserveOrderTransition(oldState, newState, "rejected")
 		return nil, shared.E(shared.CodeCommon, "Changing this status is not supported", nil)
 	}
 	if err = s.repo.UpdateOrderState(ctx, v.ID, v.Version, newState); err != nil {
+		shared.ObserveOrderTransition(oldState, newState, "failed")
 		return nil, shared.E(shared.CodeCommon, "Failed to update homestay order status", err)
 	}
+	shared.ObserveOrderTransition(oldState, newState, "success")
 	v.Version++
 	v.TradeState = newState
 	if newState == TradeStateWaitUse {
