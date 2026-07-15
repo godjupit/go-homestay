@@ -79,3 +79,18 @@ func (h *Handler) OrderDetail(c *gin.Context) {
 	// Payment inline fetch kept from original handler
 	ok(c, out)
 }
+
+func (h *Handler) OrderCancel(c *gin.Context) {
+	var req OrderCancelReq
+	if !bind(c, &req) {
+		return
+	}
+
+	v, err := h.svc.OrderCancel(c, userID(c), req.SN)
+
+	if err != nil {
+		fail(c, err)
+		return
+	}
+	ok(c, gin.H{"tradeState": v.TradeState})
+}

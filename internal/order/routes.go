@@ -7,4 +7,5 @@ func RegisterRoutes(r *gin.RouterGroup, h *Handler, jwtMW gin.HandlerFunc) {
 	o.POST("/homestayOrder/createHomestayOrder", h.CreateOrder)
 	o.POST("/homestayOrder/userHomestayOrderList", h.OrderList)
 	o.POST("/homestayOrder/userHomestayOrderDetail", h.OrderDetail)
+	o.POST("/homestayOrder/userHomestayOrderCancel", h.OrderCancel)
 }

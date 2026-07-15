@@ -19,6 +19,10 @@ type OrderDetailReq struct {
 	SN string `json:"sn" binding:"required"`
 }
 
+type OrderCancelReq struct {
+	SN string `json:"sn" binding:"required"`
+}
+
 type OrderView struct {
 	SN                  string  `json:"sn"`
 	UserID              int64   `json:"userId,omitempty"`

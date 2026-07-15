@@ -216,7 +216,7 @@ func (r *Runtime) closeOrder(ctx context.Context, task *asynq.Task) error {
 		return err
 	}
 	if ord.TradeState == order.TradeStateWaitPay {
-		_, err = r.orders.UpdateState(ctx, p.SN, order.TradeStateCancel)
+		_, err = r.orders.UpdateState(ctx, p.SN, order.TradeStateCancel, 0)
 	}
 	return err
 }
@@ -259,7 +259,7 @@ func (r *Runtime) consumePayments(ctx context.Context) {
 				state = order.TradeStateRefund
 			}
 			if state != -99 {
-				_, err = r.orders.UpdateState(ctx, event.OrderSN, state)
+				_, err = r.orders.UpdateState(ctx, event.OrderSN, state, 0)
 			}
 		}
 		if err != nil {

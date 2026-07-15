@@ -123,8 +123,10 @@ func verifyState(oldState, newState int64) bool {
 	}
 }
 
-func (s *Service) UpdateState(ctx context.Context, sn string, newState int64) (*HomestayOrder, error) {
-	v, err := s.Detail(ctx, 0, sn)
+func (s *Service) UpdateState(ctx context.Context, sn string, newState int64, userID int64) (*HomestayOrder, error) {
+	// userID == 0 means admin operation, otherwise user operation
+
+	v, err := s.Detail(ctx, userID, sn)
 	if err != nil {
 		return nil, err
 	}
@@ -144,4 +146,8 @@ func (s *Service) UpdateState(ctx context.Context, sn string, newState int64) (*
 		_, _ = s.asynq.Enqueue(asynq.NewTask(TaskPaySuccessNotify, payload))
 	}
 	return v, nil
+}
+
+func (s *Service) OrderCancel(ctx context.Context, userID int64, sn string) (*HomestayOrder, error) {
+	return s.UpdateState(ctx, sn, TradeStateCancel, userID)
 }
