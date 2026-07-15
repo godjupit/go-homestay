@@ -47,3 +47,5 @@ worker
 # scripts
 scripts/*.sh
 CLAUDE.md
+
+/home/godjupit/gin-looklook/docs
